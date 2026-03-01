@@ -1,0 +1,6 @@
+@New.AI.Chat_HostAddress = http://localhost:5193
+
+GET {{New.AI.Chat_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

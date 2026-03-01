@@ -2,7 +2,6 @@ version: '3.8'
 
 services:
   db:
-    # Usamos uma imagem oficial do pgvector baseada no PostgreSQL 16
     image: pgvector/pgvector:pg16
     container_name: rag_postgres_db
     restart: always

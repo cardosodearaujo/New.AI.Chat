@@ -39,7 +39,7 @@ namespace New.AI.Chat.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message);
+                _logger.LogError($"Saida 400 (BadRequest): Ocorreu um erro inesperado: {ex.Message}");
                 return TypedResults.BadRequest((IList<string>)new List<string> { "Ocorreu um erro ao processar a solicitação. Consulte os logs." });
             }
         }

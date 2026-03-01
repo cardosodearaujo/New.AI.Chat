@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel;
+using New.AI.Chat.Data;
 using New.AI.Chat.Services;
 using New.AI.Chat.Services.Interfaces;
 
@@ -34,6 +36,12 @@ namespace New.AI.Chat
 
                 return kernelBuilder.Build();
             });
+
+            builder.Services.AddDbContext<AIDbContext>(options =>
+                options.UseNpgsql(
+                    builder.Configuration.GetConnectionString("DefaultConnection"),
+                    o => o.UseVector()
+                ));
 
             var app = builder.Build();
 

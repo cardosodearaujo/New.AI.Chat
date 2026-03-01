@@ -2,8 +2,8 @@
 
 namespace New.AI.Chat.Services.Interfaces
 {
-    public interface IChatService
+    public interface IChatService: IDefaultService<PromptDTO, ResponseDTO>
     {
-        Task<DefaultDTO<ResponseDTO>> SendMessage(PromptDTO messageDTO);
+        Task Process(PromptDTO messageDTO);
     }
 }

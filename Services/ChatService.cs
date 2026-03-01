@@ -4,55 +4,46 @@ using New.AI.Chat.Services.Interfaces;
 
 namespace New.AI.Chat.Services
 {
-    public class ChatService : IChatService
+    public class ChatService : DefaultService<PromptDTO, ResponseDTO>, IChatService
     {
         private readonly Kernel _kernel;
 
-        public ChatService(Kernel kernel)
+        public ChatService(Kernel kernel) : base()
         {
             _kernel = kernel;
+        }        
+
+        protected override async Task Validate(PromptDTO prompt)
+        {
+            if (prompt is null)
+            {
+                AddError("Mensagem vazia!");
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(prompt.Message))
+                {
+                    AddError("Mensagem vazia!");
+                }
+            }
         }
 
-        public async Task<DefaultDTO<ResponseDTO>> SendMessage(PromptDTO prompt)
+        protected override async Task DoProcess(PromptDTO prompt)
         {
-            var response = new DefaultDTO<ResponseDTO>();
+            var result = await _kernel.InvokePromptAsync(prompt.Message);
 
-            try
+            if (result != null)
             {
-                if (prompt is null)
+                Data = new ResponseDTO 
                 {
-                    response.AddError("Mensagem vazia!");
-                }
-                else
-                {
-                    if (string.IsNullOrEmpty(prompt.Message))
-                    {
-                        response.AddError("Mensagem vazia!");
-                    }
-                }
-
-                if (!response.HasErrors())
-                {
-                    var result = await _kernel.InvokePromptAsync(prompt.Message);
-
-                    if (result != null)
-                    {
-                        response.Data = new ResponseDTO { Response = result.ToString() };
-                        response.Success = true;
-                    }
-                    else
-                    {
-                        response.AddError("Erro ao processar a mensagem.");
-                    }
-                }
-
+                    Response = result.ToString(),
+                    DateTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
+                };
             }
-            catch(Exception ex)
+            else
             {
-                response.AddError(ex.Message);
+                AddError("Erro ao processar a mensagem.");
             }
-            
-            return response;
         }
     }
 }

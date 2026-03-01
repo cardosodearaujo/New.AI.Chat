@@ -7,7 +7,7 @@ namespace New.AI.Chat.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ChatController : DefaultController<ResponseDTO>
+    public class ChatController : DefaultController<PromptDTO, ResponseDTO>
     {
         private readonly IChatService _chatService;
 
@@ -21,7 +21,7 @@ namespace New.AI.Chat.Controllers
         [HttpPost]
         public async Task<Results<Ok<ResponseDTO>, BadRequest<IList<string>>>> SendMessage(PromptDTO message)
         {
-            return await Result(await _chatService.SendMessage(message));
+            return await Process(_chatService, message);
         }
     }
 }

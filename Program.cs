@@ -3,6 +3,8 @@ using Microsoft.SemanticKernel;
 using New.AI.Chat.Data;
 using New.AI.Chat.Services;
 using New.AI.Chat.Services.Interfaces;
+using OpenAI;
+using System.ClientModel;
 
 namespace New.AI.Chat
 {
@@ -13,6 +15,7 @@ namespace New.AI.Chat
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddScoped<IChatService, ChatService>();
+            builder.Services.AddScoped<IIngestionService, IngestionService>();
 
             builder.Services.AddControllers();
 
@@ -22,17 +25,23 @@ namespace New.AI.Chat
             {
                 var httpClient = new HttpClient
                 {
-                    Timeout = TimeSpan.FromMinutes(5)
+                    Timeout = TimeSpan.FromMinutes(5),
+                    BaseAddress = new Uri("http://localhost:11434/v1")
                 };
 
                 var kernelBuilder = Kernel.CreateBuilder();
 
-                kernelBuilder.AddOpenAIChatCompletion(
-                    modelId: "phi3",
-                    apiKey: "ignore",
-                    endpoint: new Uri("http://localhost:11434/v1"),
-                    httpClient: httpClient
-                );
+                var opcoes = new OpenAIClientOptions
+                {
+                    Endpoint = new Uri("http://localhost:11434/v1"),
+                    NetworkTimeout = TimeSpan.FromMinutes(5) 
+                };
+
+                var clienteOpenAi = new OpenAIClient(new ApiKeyCredential("ignore"), opcoes);
+
+                kernelBuilder.AddOpenAIChatCompletion("phi3", clienteOpenAi);
+
+                kernelBuilder.AddOpenAIEmbeddingGenerator("nomic-embed-text", clienteOpenAi);
 
                 return kernelBuilder.Build();
             });

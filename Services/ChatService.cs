@@ -4,7 +4,7 @@ using New.AI.Chat.Services.Interfaces;
 
 namespace New.AI.Chat.Services
 {
-    public class ChatService : DefaultService<PromptDTO, ResponseDTO>, IChatService
+    public class ChatService : DefaultService<PromptDTO, PromptResponseDTO>, IChatService
     {
         private readonly Kernel _kernel;
 
@@ -34,7 +34,7 @@ namespace New.AI.Chat.Services
 
             if (result != null)
             {
-                Data = new ResponseDTO 
+                Data = new PromptResponseDTO 
                 {
                     Response = result.ToString(),
                     DateTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")

@@ -34,7 +34,7 @@ namespace New.AI.Chat
                 var opcoes = new OpenAIClientOptions
                 {
                     Endpoint = new Uri("http://localhost:11434/v1"),
-                    NetworkTimeout = TimeSpan.FromMinutes(5) 
+                    NetworkTimeout = TimeSpan.FromMinutes(240) 
                 };
 
                 var clienteOpenAi = new OpenAIClient(new ApiKeyCredential("ignore"), opcoes);

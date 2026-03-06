@@ -21,7 +21,7 @@ namespace New.AI.Chat.Controllers
                 {
                     await service.Process(entry);
 
-                    if (!service.HasErrors() && service.Data != null)
+                    if (!service.HasErrors())
                     {
                         _logger.Log(LogLevel.Information, $"Saida 200 (OK): {service.Data}");
                         return TypedResults.Ok(service.Data);

@@ -50,7 +50,8 @@ namespace New.AI.Chat.Controllers
         /// - <see cref="BadRequest{T}"/> com uma lista de mensagens de erro em caso de falha de validação.
         /// </returns>
         [HttpPost]
-        public async Task<Results<Ok<IngestionResponseDTO>, BadRequest<IList<string>>>> Ingestion(IngestionDTO ingestion)
+        [DisableRequestSizeLimit]
+        public async Task<Results<Ok<IngestionResponseDTO>, BadRequest<IList<string>>>> Ingestion([FromBody]IngestionDTO ingestion)
         {
             return await Process(_ingestionService, ingestion);
         }

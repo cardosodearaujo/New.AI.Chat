@@ -1,17 +1,30 @@
-﻿using Microsoft.SemanticKernel;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using New.AI.Chat.Data;
 using New.AI.Chat.DTOs;
 using New.AI.Chat.Services.Interfaces;
+using Pgvector.EntityFrameworkCore;
+using System.Text;
 
 namespace New.AI.Chat.Services
 {
     public class ChatService : DefaultService<PromptDTO, PromptResponseDTO>, IChatService
     {
-        private readonly Kernel _kernel;
+        private readonly IEmbeddingGenerator<string, Embedding<float>> _vectorGenerator;
+        private readonly IChatCompletionService _chatService;
+        private readonly AIDbContext _aiDbContext;        
 
-        public ChatService(Kernel kernel) : base()
+        public ChatService(
+            AIDbContext aiDbContext,
+            IEmbeddingGenerator<string, Embedding<float>> vectorGenerator,                        
+            IChatCompletionService chatService) : base()
         {
-            _kernel = kernel;
-        }        
+            _vectorGenerator = vectorGenerator;
+            _aiDbContext = aiDbContext;
+            _chatService = chatService;
+        }
 
         protected override async Task Validate(PromptDTO prompt)
         {
@@ -28,15 +41,47 @@ namespace New.AI.Chat.Services
             }
         }
 
+        private const string MASTER_PROMPT = @"
+            Você é um assistente de desenvolvimento de software sênior.
+            Responda à pergunta do utilizador utilizando APENAS o contexto de código fornecido abaixo.
+            Se a resposta não estiver no contexto, diga 'Não encontrei a resposta nos arquivos fornecidos'.
+            Não invente código ou regras de negócio que não estejam no contexto.
+
+            CONTEXTO ENCONTRADO NO BANCO DE DADOS:
+            {0}";
+
         protected override async Task DoProcess(PromptDTO prompt)
         {
-            var result = await _kernel.InvokePromptAsync(prompt.Message);
+            var messageVector = await _vectorGenerator.GenerateAsync(new[] { prompt.Message });
+            var searchVector = new Pgvector.Vector(messageVector.First().Vector.ToArray());
+            var relevantDocument = await _aiDbContext.KnowledgeDocumentDbSet
+                                                     .OrderBy(F => F.Embedding.L2Distance(searchVector))
+                                                     .Take(3)
+                                                     .ToListAsync();
 
-            if (result != null)
+            var context = new StringBuilder();
+            foreach (var document in relevantDocument)
             {
-                Data = new PromptResponseDTO 
+                context.AppendLine($"Arquivo: {document.Font}");
+                context.AppendLine(document.ContentText);
+                context.AppendLine($"");
+            }
+
+            var fullPrompt = string.Format(MASTER_PROMPT, context);
+
+            var chatHistory = new ChatHistory();
+            chatHistory.AddSystemMessage(fullPrompt);
+            chatHistory.AddUserMessage(prompt.Message);
+
+
+            var reponse = await _chatService.GetChatMessageContentAsync(chatHistory);
+
+            if (reponse != null)
+            {
+                Data = new PromptResponseDTO
                 {
-                    Response = result.ToString(),
+                    Response = reponse.Content,
+                    ReferenceFiles = relevantDocument.Select(F => F.Font).ToList(),
                     DateTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
                 };
             }

@@ -17,7 +17,7 @@ namespace New.AI.Chat.Services
         private readonly AIDbContext _aiDbContext;
 
         public IngestionService(ILogger<IngestionService> logger,
-            AIDbContext aiDbContext, 
+            AIDbContext aiDbContext,
             Kernel kernel)
         {
             _logger = logger;
@@ -55,7 +55,7 @@ namespace New.AI.Chat.Services
                             AddError("Forma inválido. O tipo esperado é um base64.");
                         }
                     }
-                } 
+                }
             }
         }
 
@@ -66,57 +66,64 @@ namespace New.AI.Chat.Services
 
             foreach (var file in ingestionFile.IngestionFiles)
             {
-                interador++;
-
-                _logger.Log(LogLevel.Warning, $"{DateTime.Now.ToString("dd/MM/yyyy")} - Arquivo {file.FileName}: {interador} de {ingestionFile.IngestionFiles.Count()}");
-
-                var exists = _aiDbContext.KnowledgeDocumentDbSet.Any(F => F.Font == file.FileName);             
-
-                if (!exists)
+                try
                 {
-                    doSave = true;
+                    interador++;
 
-                    var originalFileInBytes = Convert.FromBase64String(file.Content);
+                    _logger.Log(LogLevel.Warning, $"{DateTime.Now.ToString("dd/MM/yyyy")} - Arquivo {file.FileName}: {interador} de {ingestionFile.IngestionFiles.Count()}");
 
-                    var originalFile = System.Text.Encoding.UTF8.GetString(originalFileInBytes);
+                    var exists = _aiDbContext.KnowledgeDocumentDbSet.Any(F => F.Font == file.FileName);
 
-                    var lines = TextChunker.SplitPlainTextLines(originalFile, maxTokensPerLine: 40);
-
-                    var chunkers = TextChunker.SplitPlainTextParagraphs(
-                        lines,
-                        maxTokensPerParagraph: 50,
-                        overlapTokens: 15
-                    );
-
-                    var generatorVectors = _kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
-
-                    var vectors = await generatorVectors.GenerateAsync(chunkers);
-
-                    if (chunkers.Count != vectors.Count)
+                    if (!exists)
                     {
-                        AddError("Inconsistência na IA: O número de vetores gerados difere do número de fatias.");
-                    }
+                        doSave = true;
 
-                    var chunkersAndVectors = chunkers.Zip(vectors);
+                        var originalFileInBytes = Convert.FromBase64String(file.Content);
 
-                    foreach (var (chunkerText, chunkerVector) in chunkersAndVectors)
-                    {
-                        var knowledgeDocument = new KnowledgeDocument
+                        var originalFile = System.Text.Encoding.UTF8.GetString(originalFileInBytes);
+
+                        var lines = TextChunker.SplitPlainTextLines(originalFile, maxTokensPerLine: 40);
+
+                        var chunkers = TextChunker.SplitPlainTextParagraphs(
+                            lines,
+                            maxTokensPerParagraph: 50,
+                            overlapTokens: 15
+                        );
+
+                        var generatorVectors = _kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
+
+                        var vectors = await generatorVectors.GenerateAsync(chunkers);
+
+                        if (chunkers.Count != vectors.Count)
                         {
-                            Font = file.FileName,
-                            ContentText = chunkerText,
-                            Embedding = new Vector(chunkerVector.Vector.ToArray())
-                        };
+                            AddError("Inconsistência na IA: O número de vetores gerados difere do número de fatias.");
+                        }
 
-                        _aiDbContext.KnowledgeDocumentDbSet.Add(knowledgeDocument);
+                        var chunkersAndVectors = chunkers.Zip(vectors);
+
+                        foreach (var (chunkerText, chunkerVector) in chunkersAndVectors)
+                        {
+                            var knowledgeDocument = new KnowledgeDocument
+                            {
+                                Font = file.FileName,
+                                ContentText = chunkerText,
+                                Embedding = new Vector(chunkerVector.Vector.ToArray())
+                            };
+
+                            _aiDbContext.KnowledgeDocumentDbSet.Add(knowledgeDocument);
+                        }
                     }
-                }
-                else
-                {
-                    _logger.Log(LogLevel.Warning, $"{DateTime.Now.ToString("dd/MM/yyyy")} - Arquivo {file.FileName} existe na base de dados: {exists}");
-                }
+                    else
+                    {
+                        _logger.Log(LogLevel.Warning, $"{DateTime.Now.ToString("dd/MM/yyyy")} - Arquivo {file.FileName} existe na base de dados: {exists}");
+                    }
 
-                if (doSave) await _aiDbContext.SaveChangesAsync();
+                    if (doSave) await _aiDbContext.SaveChangesAsync();
+                }
+                catch (Exception Ex)
+                {
+                    AddError($"{DateTime.Now.ToString("dd/MM/yyyy")} - Ocorreu um erro a processar o arquivo: {file.FileName} -> {Ex.Message} | {Ex?.InnerException?.Message}");
+                }                
             }
         }
     }

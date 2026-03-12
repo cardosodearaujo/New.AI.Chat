@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using New.AI.Chat.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace New.AI.Chat.Migrations
 {
     [DbContext(typeof(AIDbContext))]
-    partial class AIDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312154852_CRIAR_ESTRUTURA_TABELAS_HIERARQUICAS")]
+    partial class CRIAR_ESTRUTURA_TABELAS_HIERARQUICAS
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.AI;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Text;
 using New.AI.Chat.Data;
@@ -7,16 +8,20 @@ using New.AI.Chat.Extensions;
 using New.AI.Chat.Models;
 using New.AI.Chat.Services.Interfaces;
 using Pgvector;
+using System.Text;
 
 namespace New.AI.Chat.Services
 {
     public class IngestionService : DefaultService<IngestionDTO, IngestionResponseDTO>, IIngestionService
     {
+        private string DateNow { get => DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"); }
+
         private readonly ILogger<IngestionService> _logger;
         private readonly Kernel _kernel;
         private readonly AIDbContext _aiDbContext;
 
-        public IngestionService(ILogger<IngestionService> logger,
+        public IngestionService(
+            ILogger<IngestionService> logger,
             AIDbContext aiDbContext,
             Kernel kernel)
         {
@@ -27,9 +32,9 @@ namespace New.AI.Chat.Services
 
         protected override async Task Validate(IngestionDTO ingestionFile)
         {
-            if (ingestionFile is null)
+            if (ingestionFile?.IngestionFiles == null || !ingestionFile.IngestionFiles.Any())
             {
-                AddError("Arquivo vazio!");
+                AddError("A lista de arquivos está vazia ou nula!");
             }
             else
             {
@@ -46,13 +51,23 @@ namespace New.AI.Chat.Services
                             AddError("O nome do arquivo é obrigatório.");
                         }
 
-                        if (string.IsNullOrEmpty(file.Content))
+                        if (string.IsNullOrEmpty(file.Format))
                         {
-                            AddError("Arquivo vazio!");
+                            AddError("O formato do arquivo é obrigatório.");
                         }
-                        else if (!file.Content.IsBase64String())
+
+                        if (file.Size > 0)
                         {
-                            AddError("Forma inválido. O tipo esperado é um base64.");
+                            AddError("O tamanho do arquivo é obrigatório.");
+                        }
+
+                        if (string.IsNullOrEmpty(file.ContentText))
+                        {
+                            AddError($"O conteúdo do arquivo {file.FileName} está vazio!");
+                        }
+                        else if (!file.ContentText.IsBase64String())
+                        {
+                            AddError($"Formato inválido no arquivo {file.FileName}. O tipo esperado é um base64.");
                         }
                     }
                 }
@@ -61,8 +76,9 @@ namespace New.AI.Chat.Services
 
         protected override async Task DoProcess(IngestionDTO ingestionFile)
         {
-            var interador = 0;
-            var doSave = false;
+            int interador = 0;
+
+            var generatorVectors = _kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
 
             foreach (var file in ingestionFile.IngestionFiles)
             {
@@ -70,61 +86,108 @@ namespace New.AI.Chat.Services
                 {
                     interador++;
 
-                    _logger.Log(LogLevel.Warning, $"{DateTime.Now.ToString("dd/MM/yyyy")} - Arquivo {file.FileName}: {interador} de {ingestionFile.IngestionFiles.Count()}");
+                    _logger.LogInformation($"{DateNow} - Arquivo {file.FileName}: {interador} de {ingestionFile.IngestionFiles.Count()}");
 
-                    var exists = _aiDbContext.KnowledgeDocumentDbSet.Any(F => F.Font == file.FileName);
+                    var fileExists = await _aiDbContext.DbSetKDInformation.AnyAsync(f => f.FileName == file.FileName);
 
-                    if (!exists)
+                    if (!fileExists)
                     {
-                        doSave = true;
+                        var originalFileInBytes = Convert.FromBase64String(file.ContentText);
 
-                        var originalFileInBytes = Convert.FromBase64String(file.Content);
+                        var originalFile = Encoding.UTF8.GetString(originalFileInBytes);
 
-                        var originalFile = System.Text.Encoding.UTF8.GetString(originalFileInBytes);
-
-                        var lines = TextChunker.SplitPlainTextLines(originalFile, maxTokensPerLine: 40);
-
-                        var chunkers = TextChunker.SplitPlainTextParagraphs(
-                            lines,
-                            maxTokensPerParagraph: 50,
-                            overlapTokens: 15
-                        );
-
-                        var generatorVectors = _kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
-
-                        var vectors = await generatorVectors.GenerateAsync(chunkers);
-
-                        if (chunkers.Count != vectors.Count)
+                        var kDInformation = new KnowledgeDocumentInformation
                         {
-                            AddError("Inconsistência na IA: O número de vetores gerados difere do número de fatias.");
-                        }
+                            FileName = file.FileName,
+                            Format = file.Format,
+                            Size = file.Size,
+                            ContextText = originalFile,
+                            DateFirstInsertion = DateTime.Now,
+                            DateLastInsertion = DateTime.Now,
+                            LowGranularityList = await GetLowGranularity(generatorVectors, originalFile)
+                        };
 
-                        var chunkersAndVectors = chunkers.Zip(vectors);
+                        await _aiDbContext.DbSetKDInformation.AddAsync(kDInformation);
+                        await _aiDbContext.SaveChangesAsync();
 
-                        foreach (var (chunkerText, chunkerVector) in chunkersAndVectors)
-                        {
-                            var knowledgeDocument = new KnowledgeDocument
-                            {
-                                Font = file.FileName,
-                                ContentText = chunkerText,
-                                Embedding = new Vector(chunkerVector.Vector.ToArray())
-                            };
-
-                            _aiDbContext.KnowledgeDocumentDbSet.Add(knowledgeDocument);
-                        }
+                        _logger.LogInformation($"{DateNow} - Arquivo {file.FileName}: Inserido com sucesso.");
                     }
                     else
                     {
-                        _logger.Log(LogLevel.Warning, $"{DateTime.Now.ToString("dd/MM/yyyy")} - Arquivo {file.FileName} existe na base de dados: {exists}");
+                        _logger.LogWarning($"{DateNow} - Arquivo {file.FileName} já existe na base de dados.");
                     }
-
-                    if (doSave) await _aiDbContext.SaveChangesAsync();
                 }
-                catch (Exception Ex)
+                catch (Exception ex)
                 {
-                    AddError($"{DateTime.Now.ToString("dd/MM/yyyy")} - Ocorreu um erro a processar o arquivo: {file.FileName} -> {Ex.Message} | {Ex?.InnerException?.Message}");
-                }                
+                    AddError($"{DateNow} - Erro ao processar o arquivo {file.FileName}: {ex.Message} | {ex?.InnerException?.Message}");
+                    _logger.LogWarning($"{DateNow} - Erro ao processar o arquivo {file.FileName}: {ex.Message} | {ex?.InnerException?.Message}");
+                }
             }
         }
+
+        private async Task<List<KnowledgeDocumentLowGranularity>> GetLowGranularity(
+            IEmbeddingGenerator<string, Embedding<float>> generatorVectors,
+            string originalFile)
+        {
+            var maxTokensPerLine = 120;
+            var maxTokensPerParagraph = 800;
+            var overlapTokens = 30;
+
+            var granularityList = new List<KnowledgeDocumentLowGranularity>();
+
+            var lines = TextChunker.SplitPlainTextLines(originalFile, maxTokensPerLine: maxTokensPerLine);
+
+            var chunks = TextChunker.SplitPlainTextParagraphs(lines, maxTokensPerParagraph: maxTokensPerParagraph, overlapTokens: overlapTokens);
+
+            var vectors = await generatorVectors.GenerateAsync(chunks);
+
+            var vectorsAndChunks = chunks.Zip(vectors.Select(F => F.Vector).ToList());
+
+            foreach (var (chunk, vector) in vectorsAndChunks)
+            {
+                var granularity = new KnowledgeDocumentLowGranularity
+                {
+                    ContentText = chunk,
+                    Embedding = new Vector(vector.ToArray()),
+                    HighGranularityList = await GetHighGranularity(generatorVectors, chunk)
+                };
+
+                granularityList.Add(granularity);
+            }
+
+            return granularityList;
+        }
+
+        private async Task<List<KnowledgeDocumentHighGranularity>> GetHighGranularity(
+            IEmbeddingGenerator<string, Embedding<float>> generatorVectors, 
+            string originalFile)
+        {
+            var maxTokensPerLine = 60;
+            var maxTokensPerParagraph = 150;
+            var overlapTokens = 30;
+
+            var granularityList = new List<KnowledgeDocumentHighGranularity>();
+
+            var lines = TextChunker.SplitPlainTextLines(originalFile, maxTokensPerLine: maxTokensPerLine);
+
+            var chunks = TextChunker.SplitPlainTextParagraphs(lines, maxTokensPerParagraph: maxTokensPerParagraph, overlapTokens: overlapTokens);
+
+            var vectors = await generatorVectors.GenerateAsync(chunks);
+
+            var vectorsAndChunks = chunks.Zip(vectors.Select(F => F.Vector).ToList());
+
+            foreach (var (chunk, vector) in vectorsAndChunks)
+            {
+                var granularity = new KnowledgeDocumentHighGranularity
+                {
+                    ContentText = chunk,
+                    Embedding = new Vector(vector.ToArray())
+                };
+
+                granularityList.Add(granularity);
+            }
+
+            return granularityList;
+        }        
     }
 }

@@ -1,135 +1,38 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Azure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using New.AI.Chat.Data;
 using New.AI.Chat.DTOs;
+using New.AI.Chat.Enumerators;
 using New.AI.Chat.Services.Interfaces;
 using Pgvector.EntityFrameworkCore;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace New.AI.Chat.Services
 {
     public class ChatService : DefaultService<PromptDTO, PromptResponseDTO>, IChatService
     {
-        private const string MASTER_PROMPT = @"
-            Você é um assistente de desenvolvimento de software sênior.
-            Responda à pergunta do utilizador utilizando APENAS o contexto de código fornecido abaixo.
-            Se a resposta não estiver no contexto, diga 'Não encontrei a resposta nos arquivos fornecidos'.
-            Não invente código ou regras de negócio que não estejam no contexto.
-
-            CONTEXTO ENCONTRADO NO BANCO DE DADOS:
-            {0}";
-
         private readonly AIDbContext _aiDbContext;
         private readonly IEmbeddingGenerator<string, Embedding<float>> _vectorGenerator;
-        private readonly IChatCompletionService _chatService;               
+        private readonly ILLMStrategyFactoryService _LLMStrategyFactory;
+        private readonly ILogger<ChatService> _logger;
+
+        public string DateTimeNow => DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm:ss");
 
         public ChatService(
             Kernel kernel,
-            AIDbContext aiDbContext) : base()
+            AIDbContext aiDbContext,
+            ILogger<ChatService> logger,
+            ILLMStrategyFactoryService LLMStrategyFactory) : base()
         {
             _aiDbContext = aiDbContext;
-            _vectorGenerator = kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();             
-            _chatService = kernel.GetRequiredService<IChatCompletionService>();
-        }
-
-        protected override async Task Validate(PromptDTO prompt)
-        {
-            if (prompt is null)
-            {
-                AddError("Mensagem vazia!");
-            }
-            else
-            {
-                if (string.IsNullOrEmpty(prompt.Message))
-                {
-                    AddError("Mensagem vazia!");
-                }
-            }
-        }        
-
-        protected override async Task DoProcess(PromptDTO prompt)
-        {
-            var messageVector = await _vectorGenerator.GenerateAsync(new[] { prompt.Message });
-            var searchVector = new Pgvector.Vector(messageVector.FirstOrDefault().Vector.ToArray());
-            var relevantDocument = new StreamingKernelContentItemCollection(); /*await _aiDbContext.DbSetKDInformation
-                                                     .OrderBy(F => F.Embedding.L2Distance(searchVector))
-                                                     .Take(3)
-                                                     .ToListAsync();*/
-
-            var context = new StringBuilder();
-            foreach (var document in relevantDocument)
-            {
-                //context.AppendLine($"Arquivo: {document.Font}");
-                //context.AppendLine(document.ContentText);
-                //context.AppendLine($"");
-            }
-
-            var fullPrompt = string.Format(MASTER_PROMPT, context);
-
-            var chatHistory = new ChatHistory();
-            chatHistory.AddSystemMessage(fullPrompt);
-            chatHistory.AddUserMessage(prompt.Message);
-
-            var reponse = await _chatService.GetChatMessageContentAsync(chatHistory);
-
-            if (reponse != null)
-            {
-                Data = new PromptResponseDTO
-                {
-                    Response = reponse.Content,
-                    //ReferenceFiles = relevantDocument.Select(F => F.Font).ToList(),
-                    DateTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
-                };
-            }
-            else
-            {
-                AddError("Erro ao processar a mensagem.");
-            }
-        }
-    }
-}
-
-
-/*using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.AI;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
-using New.AI.Chat.Data;
-using New.AI.Chat.DTOs;
-using New.AI.Chat.Services.Interfaces;
-using Pgvector.EntityFrameworkCore;
-using System.Text;
-using System.Text.RegularExpressions;
-
-namespace New.AI.Chat.Services
-{
-    public class ChatService : DefaultService<PromptDTO, PromptResponseDTO>, IChatService
-    {
-        private const string MASTER_PROMPT = @"
-            Você é um Arquiteto de Software Sênior e Engenheiro de Dados.
-            Abaixo, você receberá blocos completos de código-fonte (Contexto Expandido).
-            Responda à pergunta do utilizador detalhadamente, utilizando APENAS o contexto fornecido.
-            Se a resposta exigir a citação de código, apresente o código.
-            Se a resposta não estiver no contexto, diga claramente: 'Não encontrei a resposta nos módulos mapeados'.
-            Não alucine ou invente regras de negócio.
-
-            CONTEXTO ARQUITETURAL ENCONTRADO:
-            {0}";
-
-        private readonly AIDbContext _aiDbContext;
-        private readonly IEmbeddingGenerator<string, Embedding<float>> _vectorGenerator;
-        private readonly IChatCompletionService _chatService;
-
-        public ChatService(
-            Kernel kernel,
-            AIDbContext aiDbContext) : base()
-        {
-            _aiDbContext = aiDbContext;
-            _vectorGenerator = kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
-            _chatService = kernel.GetRequiredService<IChatCompletionService>();
+            _logger = logger;
+            _LLMStrategyFactory = LLMStrategyFactory;
+            _vectorGenerator = kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();            
         }
 
         protected override async Task Validate(PromptDTO prompt)
@@ -138,132 +41,143 @@ namespace New.AI.Chat.Services
             {
                 AddError("A mensagem do utilizador não pode ser vazia!");
             }
+
+            if ((prompt.LLM is null) || (!prompt.LLM.HasValue))
+            {
+                AddError("É obrigatório informar o LLM.");
+            }
+            else
+            {
+                if (!Enum.GetValues<LLMEnum>().Contains(prompt.LLM.Value))
+                {
+                    AddError("LLM informado não é válido.");
+                }
+            }
         }
 
         protected override async Task DoProcess(PromptDTO prompt)
         {
-            // 1. Gera o vetor da pergunta
-            var messageVectorResult = await _vectorGenerator.GenerateAsync([prompt.Message]);
-            var searchVector = new Pgvector.Vector(messageVectorResult[0].Vector.ToArray());
+            //Incorpora o prompt:
+            var promptEmbedding = await _vectorGenerator.GenerateAsync([prompt.Message]);
 
-            // 2. Extrai possíveis termos técnicos (ex: FrmVendas, txt_CodCli, CalcularImposto)
-            var termosTecnicos = ExtrairTermosTecnicos(prompt.Message);
-
-            // Conjunto para armazenar os IDs únicos dos Pais encontrados nas 3 buscas
-            var parentIdsEncontrados = new HashSet<Guid>();
-
-            // --- EIXO 1: Busca Semântica na Lente Grande Angular (PAI) ---
-            var idsPaiSemanticos = await _aiDbContext.KnowledgeDocumentParents
-                .OrderBy(p => p.Embedding.L2Distance(searchVector))
-                .Take(2) // Pega os 2 módulos mais semanticamente alinhados
-                .Select(p => p.Id)
-                .ToListAsync();
-
-            foreach (var id in idsPaiSemanticos) parentIdsEncontrados.Add(id);
-
-            // --- EIXO 2: Busca Semântica na Lente de Aumento (FILHO) ---
-            var idsPaiViaFilhoSemantico = await _aiDbContext.KnowledgeDocumentChildren
-                .OrderBy(c => c.Embedding.L2Distance(searchVector))
-                .Take(3) // Pega as 3 lógicas/métodos mais parecidos e sobe para o Pai
-                .Select(c => c.ParentId)
-                .ToListAsync();
-
-            foreach (var id in idsPaiViaFilhoSemantico) parentIdsEncontrados.Add(id);
-
-            // --- EIXO 3: Busca Textual Exata na Lente de Aumento (FILHO Lexical) ---
-            if (termosTecnicos.Any())
+            if (promptEmbedding.Any())
             {
-                foreach (var termo in termosTecnicos)
+                //Gera o vetor o prompt:
+                var promptVector = new Pgvector.Vector(promptEmbedding?.FirstOrDefault()?.Vector.ToArray());
+                
+                //Passo 1: Busca dados de baixa granularidade com base no prompt enviado pelo usuário:
+                var lowGranularitySemanticIDs = await _aiDbContext.DbSetKDLowGranularity
+                                                                  .OrderBy(p => p.Embedding.L2Distance(promptVector))
+                                                                  .Take(2)
+                                                                  .Select(p => p.Id)
+                                                                  .ToListAsync();
+                
+                //Passo 2: Busca dados de alta granularidade com base no prompt enviado pelo usuário:
+                var highGranularitySemanticIDs = await _aiDbContext.DbSetKDHighGranularity
+                                                                   .OrderBy(c => c.Embedding.L2Distance(promptVector))
+                                                                   .Take(3)
+                                                                   .Select(c => c.LowGranularityId)
+                                                                   .ToListAsync();
+
+                //Passo 3: Busca nos dados de alta granulariade com termos especificos (Extraidos por IA) que estejam no prompt enviado pelo usuário:
+                var technicalTerms = await ExtractTechnicalTerms(prompt.Message);
+                var allHighGranularityLexicalIDs = new List<Guid>();
+
+                if (technicalTerms.Any())
                 {
-                    // ILIKE usa o índice pg_trgm no PostgreSQL para buscas ultra rápidas
-                    var idsPaiViaLexical = await _aiDbContext.KnowledgeDocumentChildren
-                        .Where(c => EF.Functions.ILike(c.ContentText, $"%{termo}%"))
-                        .Take(2)
-                        .Select(c => c.ParentId)
-                        .ToListAsync();
-
-                    foreach (var id in idsPaiViaLexical) parentIdsEncontrados.Add(id);
-                }
-            }
-
-            // 3. Hidratação: Resgata o texto completo (800 tokens) dos pais encontrados
-            var documentosRelevantes = await _aiDbContext.KnowledgeDocumentParents
-                .Where(p => parentIdsEncontrados.Contains(p.Id))
-                .ToListAsync();
-
-            if (!documentosRelevantes.Any())
-            {
-                AddError("Nenhum contexto relevante foi encontrado na base de código.");
-                return;
-            }
-
-            // 4. Constrói o Super Contexto
-            var context = new StringBuilder();
-            foreach (var document in documentosRelevantes)
-            {
-                context.AppendLine($"--- Início do Arquivo/Módulo: {document.Font} ---");
-                context.AppendLine(document.ContentText);
-                context.AppendLine($"--- Fim do Arquivo/Módulo ---");
-                context.AppendLine();
-            }
-
-            var fullPrompt = string.Format(MASTER_PROMPT, context.ToString());
-
-            var chatHistory = new ChatHistory();
-            chatHistory.AddSystemMessage(fullPrompt);
-            chatHistory.AddUserMessage(prompt.Message);
-
-            // 5. Chamada ao LLM
-            var response = await _chatService.GetChatMessageContentAsync(chatHistory);
-
-            if (response != null)
-            {
-                Data = new PromptResponseDTO
-                {
-                    Response = response.Content,
-                    ReferenceFiles = documentosRelevantes.Select(f => f.Font).Distinct().ToList(),
-                    DateTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
-                };
-            }
-            else
-            {
-                AddError("A IA não retornou nenhuma resposta válida.");
-            }
-        }
-
-        /// <summary>
-        /// Método privado para extrair padrões de código da pergunta do usuário.
-        /// Identifica CamelCase, PascalCase, snake_case ou palavras maiores que 5 caracteres.
-        /// </summary>
-        private List<string> ExtrairTermosTecnicos(string pergunta)
-        {
-            var termos = new HashSet<string>();
-
-            // Regex para capturar palavras que parecem código (ex: CalcularDIFAL, id_cliente)
-            var regexCodigo = new Regex(@"\b([a-z]+[A-Z][a-zA-Z]*|[A-Z][a-zA-Z]*[A-Z][a-zA-Z]*|[a-zA-Z]+_[a-zA-Z0-9_]+)\b");
-            var matches = regexCodigo.Matches(pergunta);
-
-            foreach (Match match in matches)
-            {
-                termos.Add(match.Value);
-            }
-
-            // Fallback: se não achar padrão de código, pega palavras-chave longas
-            if (!termos.Any())
-            {
-                var palavras = pergunta.Split(new[] { ' ', '.', ',', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
-                var ignoreList = new[] { "como", "onde", "qual", "quem", "para", "porque", "sobre", "arquivo", "classe", "metodo" };
-
-                foreach (var palavra in palavras)
-                {
-                    if (palavra.Length > 5 && !ignoreList.Contains(palavra.ToLower()))
+                    foreach (var terms in technicalTerms)
                     {
-                        termos.Add(palavra);
+                        var highGranularityLexicalIDs = await _aiDbContext.DbSetKDHighGranularity
+                                                                          .Where(c => EF.Functions.ILike(c.ContentText, $"%{terms}%"))
+                                                                          .Take(2)
+                                                                          .Select(c => c.LowGranularityId)
+                                                                          .ToListAsync();
+
+                        allHighGranularityLexicalIDs.AddRange(highGranularityLexicalIDs);
                     }
                 }
+
+                //Passo 4: Resgata os registros encontrados nas buscas anteriores:
+                var lowGranularityIDs = new List<Guid>();
+                lowGranularityIDs.AddRange(lowGranularitySemanticIDs);
+                lowGranularityIDs.AddRange(highGranularitySemanticIDs);
+                lowGranularityIDs.AddRange(allHighGranularityLexicalIDs);
+
+                var referenceData = await _aiDbContext.DbSetKDLowGranularity
+                                                      .Include(p => p.KnowledgeDocumentInformation)
+                                                      .Where(p => lowGranularityIDs.Contains(p.Id))
+                                                      .ToListAsync();
+
+                //Passo 5: Caso tenha dados constroi o contexto de dados:
+                if (referenceData.Any())
+                {
+                    var systemPrompt = new StringBuilder();
+                    var referenceFiles = new List<string>();
+
+                    foreach (var reference in referenceData)
+                    {
+                        var fileName = reference?.KnowledgeDocumentInformation?.FileName;
+
+                        referenceFiles.Add(fileName);
+
+                        systemPrompt.AppendLine($"--- Arquivo: {fileName} ---");
+                        systemPrompt.AppendLine(reference.ContentText);                        
+                    }
+
+                    //Passo 6: Chama a estatégia para resolver qual LLM vai responder a pergunta:
+                    var response = await _LLMStrategyFactory.GetStrategy(prompt.LLM.Value)
+                                                            .BuildPromptResponse(prompt.Message, 
+                                                                                 systemPrompt.ToString());
+
+                    //Passo 7: Envia a resposta para o usuário:
+                    if (response != null)
+                    {
+                        Data = new PromptResponseDTO
+                        {
+                            Response = response,
+                            ReferenceFiles = referenceFiles.ToList(),
+                            DateTime = DateTimeNow
+                        };
+                    }
+                    else
+                    {
+                        AddError($"O modelo {prompt.LLM} não retornou nenhuma resposta válida.");
+                    }
+                }
+                else
+                {
+                    AddError("Nenhum contexto relevante foi encontrado na base de código.");
+                }                
+            }           
+        }
+
+        private async Task<List<string>> ExtractTechnicalTerms(string message)
+        {
+            var terms = new HashSet<string>();
+
+            var response = await _LLMStrategyFactory.GetStrategy(LLMEnum.LightModel)
+                                                    .BuildPromptResponse(message);
+
+            if (!string.IsNullOrWhiteSpace(response))
+            {
+                var extractTerms = JsonSerializer.Deserialize<List<string>>(
+                                                response, 
+                                                new JsonSerializerOptions 
+                                                { 
+                                                    PropertyNameCaseInsensitive = true 
+                                                });
+
+                if (extractTerms != null)
+                {
+                    terms = extractTerms.Where(T => !string.IsNullOrWhiteSpace(T))
+                                        .Select(T => T.Trim())
+                                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    _logger.LogInformation($"Termos extraídos pela IA: {string.Join(", ", extractTerms)}");
+                }                
             }
 
-            return termos.ToList();
+            return terms.ToList();
         }
     }
-}*/
+}

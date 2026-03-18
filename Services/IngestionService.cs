@@ -42,7 +42,7 @@ namespace New.AI.Chat.Services
                 {
                     if (file is null)
                     {
-                        AddError("Arquivo vazio!");
+                        AddError("Lista de arquivos vazia!");
                     }
                     else
                     {
@@ -53,12 +53,12 @@ namespace New.AI.Chat.Services
 
                         if (string.IsNullOrEmpty(file.Format))
                         {
-                            AddError("O formato do arquivo é obrigatório.");
+                            AddError($"O formato do arquivo {file.FileName} é obrigatório.");
                         }
 
-                        if (file.Size > 0)
+                        if (file.Size <= 0)
                         {
-                            AddError("O tamanho do arquivo é obrigatório.");
+                            AddError($"O tamanho do arquivo {file.FileName} é obrigatório.");
                         }
 
                         if (string.IsNullOrEmpty(file.ContentText))
@@ -102,8 +102,8 @@ namespace New.AI.Chat.Services
                             Format = file.Format,
                             Size = file.Size,
                             ContextText = originalFile,
-                            DateFirstInsertion = DateTime.Now,
-                            DateLastInsertion = DateTime.Now,
+                            DateFirstInsertion = DateTime.UtcNow,
+                            DateLastInsertion = DateTime.UtcNow,
                             LowGranularityList = await GetLowGranularity(generatorVectors, originalFile)
                         };
 

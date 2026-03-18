@@ -1,8 +1,6 @@
-﻿using Azure;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
 using New.AI.Chat.Data;
 using New.AI.Chat.DTOs;
 using New.AI.Chat.Enumerators;
@@ -10,7 +8,6 @@ using New.AI.Chat.Services.Interfaces;
 using Pgvector.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace New.AI.Chat.Services
 {

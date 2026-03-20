@@ -7,7 +7,7 @@ namespace New.AI.Chat.Extensions
 {
     public static class ConfigureAIInjectionsExtensions
     {
-        public static void AddAIInjection(this IServiceCollection services)
+        public static void AddAIInjection(this IServiceCollection services, IConfiguration configuration)
         {
             var openAiOptions = new OpenAIClientOptions
             {
@@ -37,6 +37,11 @@ namespace New.AI.Chat.Extensions
                 modelId: "qwen2.5-coder:7b",
                 openAIClient: clienteOpenAi,
                 serviceId: LLMEnum.Qwen7b.GetDescription());
+
+            kernelBuilder.AddGoogleAIGeminiChatCompletion(
+                modelId: configuration["AI:Google:ModelId"]!,
+                apiKey: configuration["AI:Google:ApiKey"],
+                serviceId: "arquitetoNuvem");
 
             services.AddSingleton(kernelBuilder.Build());
         }

@@ -6,9 +6,9 @@ namespace New.AI.Chat.Services
     public class LLMStrategyFactoryService : ILLMStrategyFactoryService
     {
 
-        private readonly IList<ILLMStrategyService> _LLMStrategyServices;
+        private readonly IEnumerable<ILLMStrategyService> _LLMStrategyServices;
 
-        public LLMStrategyFactoryService(IList<ILLMStrategyService> LLMStrategyServices)
+        public LLMStrategyFactoryService(IEnumerable<ILLMStrategyService> LLMStrategyServices)
         {
             _LLMStrategyServices = LLMStrategyServices;
         }

@@ -1,7 +1,7 @@
-﻿using Microsoft.OpenApi;
-using Microsoft.SemanticKernel;
+﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using New.AI.Chat.Enumerators;
+using New.AI.Chat.Extensions;
 using New.AI.Chat.Services.Interfaces;
 
 namespace New.AI.Chat.Services
@@ -32,7 +32,7 @@ namespace New.AI.Chat.Services
             chatHistory.AddSystemMessage(finalSystemPrompt);
             chatHistory.AddUserMessage(userPrompt);
 
-            var response = await _kernel.GetRequiredService<IChatCompletionService>(LLMEnum.Phi3.GetDisplayName())
+            var response = await _kernel.GetRequiredService<IChatCompletionService>(LLMEnum.Phi3.GetDescription())
                                         .GetChatMessageContentAsync(chatHistory);
 
             return response.Content;

@@ -1,12 +1,12 @@
-﻿using Microsoft.OpenApi;
-using Microsoft.SemanticKernel;
+﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using New.AI.Chat.Enumerators;
+using New.AI.Chat.Extensions;
 using New.AI.Chat.Services.Interfaces;
 
 namespace New.AI.Chat.Services
 {
-    public class QwenLLMService : ILLMStrategyService
+    public class Qwen15LLMService : ILLMStrategyService
     {
         private const string DEFAULT_PROMPT = @"
             Aja como um desenvolvedor C# ou delphi. Leia o contexto abaixo e responda à pergunta.
@@ -16,11 +16,11 @@ namespace New.AI.Chat.Services
             CONTEXTO:
             {0}";
 
-        public LLMEnum LLM => LLMEnum.Qwen;
+        public LLMEnum LLM => LLMEnum.Qwen15;
 
         private readonly Kernel _kernel;
 
-        public QwenLLMService(Kernel kernel)
+        public Qwen15LLMService(Kernel kernel)
         {
             _kernel = kernel;
         }
@@ -33,7 +33,7 @@ namespace New.AI.Chat.Services
             chatHistory.AddSystemMessage(finalSystemPrompt);
             chatHistory.AddUserMessage(userPrompt);
 
-            var response = await _kernel.GetRequiredService<IChatCompletionService>(LLMEnum.Qwen.GetDisplayName())
+            var response = await _kernel.GetRequiredService<IChatCompletionService>(LLMEnum.Qwen15.GetDescription())
                                         .GetChatMessageContentAsync(chatHistory);
 
             return response.Content;

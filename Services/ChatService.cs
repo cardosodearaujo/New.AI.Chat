@@ -29,7 +29,7 @@ namespace New.AI.Chat.Services
             _aiDbContext = aiDbContext;
             _logger = logger;
             _LLMStrategyFactory = LLMStrategyFactory;
-            _vectorGenerator = kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();            
+            _vectorGenerator = kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
         }
 
         protected override async Task Validate(PromptDTO prompt)
@@ -45,7 +45,7 @@ namespace New.AI.Chat.Services
             }
             else
             {
-                if (!Enum.GetValues<LLMEnum>().Contains(prompt.LLM.Value))
+                if (!Enum.IsDefined(typeof(LLMEnum), prompt.LLM.Value))
                 {
                     AddError("LLM informado não é válido.");
                 }
@@ -54,58 +54,34 @@ namespace New.AI.Chat.Services
 
         protected override async Task DoProcess(PromptDTO prompt)
         {
-            //Incorpora o prompt:
+            //Passo1: Incorpora o prompt:
             var promptEmbedding = await _vectorGenerator.GenerateAsync([prompt.Message]);
 
             if (promptEmbedding.Any())
             {
-                //Gera o vetor o prompt:
+                //Passo 2: Gera o vetor do prompt:
                 var promptVector = new Pgvector.Vector(promptEmbedding?.FirstOrDefault()?.Vector.ToArray());
-                
-                //Passo 1: Busca dados de baixa granularidade com base no prompt enviado pelo usuário:
-                var lowGranularitySemanticIDs = await _aiDbContext.DbSetKDLowGranularity
-                                                                  .OrderBy(p => p.Embedding.L2Distance(promptVector))
-                                                                  .Take(2)
-                                                                  .Select(p => p.Id)
-                                                                  .ToListAsync();
-                
-                //Passo 2: Busca dados de alta granularidade com base no prompt enviado pelo usuário:
-                var highGranularitySemanticIDs = await _aiDbContext.DbSetKDHighGranularity
-                                                                   .OrderBy(c => c.Embedding.L2Distance(promptVector))
-                                                                   .Take(3)
-                                                                   .Select(c => c.LowGranularityId)
-                                                                   .ToListAsync();
 
-                //Passo 3: Busca nos dados de alta granulariade com termos especificos (Extraidos por IA) que estejam no prompt enviado pelo usuário:
-                var technicalTerms = await ExtractTechnicalTerms(prompt.Message);
-                var allHighGranularityLexicalIDs = new List<Guid>();
+                var lowGranularityIDs = new HashSet<Guid>();
 
-                if (technicalTerms.Any())
-                {
-                    foreach (var terms in technicalTerms)
-                    {
-                        var highGranularityLexicalIDs = await _aiDbContext.DbSetKDHighGranularity
-                                                                          .Where(c => EF.Functions.ILike(c.ContentText, $"%{terms}%"))
-                                                                          .Take(2)
-                                                                          .Select(c => c.LowGranularityId)
-                                                                          .ToListAsync();
+                //Passo 3: Busca dados de baixa granularidade com base no prompt enviado pelo usuário:
+                lowGranularityIDs.UnionWith(await GetLowGranularitySemanticIDs(promptVector));
 
-                        allHighGranularityLexicalIDs.AddRange(highGranularityLexicalIDs);
-                    }
-                }
+                //Passo 4: Busca dados de baixa granulariade a partir de dados de alta granularidade com base no prompt enviado pelo usuário:
+                lowGranularityIDs.UnionWith(await GetLowGranularityWithHighGranularitySemanticIDs(promptVector));
 
-                //Passo 4: Resgata os registros encontrados nas buscas anteriores:
-                var lowGranularityIDs = new List<Guid>();
-                lowGranularityIDs.AddRange(lowGranularitySemanticIDs);
-                lowGranularityIDs.AddRange(highGranularitySemanticIDs);
-                lowGranularityIDs.AddRange(allHighGranularityLexicalIDs);
+                //Passo 3: Busca os dados de baixa granulariade com base em dados de alta granulariade usando termos especificos extraidos
+                //por IA que estejam no prompt enviado pelo usuário:
+                lowGranularityIDs.UnionWith(await GetLowGranularityWithHighGranularityLexicalIDs(prompt.Message));
 
+                //Passo 4: Busca todas as instancias de baixa granularidade selecionadas nos passos anteriores:
                 var referenceData = await _aiDbContext.DbSetKDLowGranularity
+                                                      .AsNoTracking()
                                                       .Include(p => p.KnowledgeDocumentInformation)
                                                       .Where(p => lowGranularityIDs.Contains(p.Id))
                                                       .ToListAsync();
 
-                //Passo 5: Caso tenha dados constroi o contexto de dados:
+                //Passo 5: Caso tenha dados constroi o contexto do prompt:
                 if (referenceData.Any())
                 {
                     var systemPrompt = new StringBuilder();
@@ -118,12 +94,12 @@ namespace New.AI.Chat.Services
                         referenceFiles.Add(fileName);
 
                         systemPrompt.AppendLine($"--- Arquivo: {fileName} ---");
-                        systemPrompt.AppendLine(reference.ContentText);                        
+                        systemPrompt.AppendLine(reference.ContentText);
                     }
 
-                    //Passo 6: Chama a estatégia para resolver qual LLM vai responder a pergunta:
+                    //Passo 6: Chama a estatégia para resolver qual LLM irá responder a pergunta:
                     var response = await _LLMStrategyFactory.GetStrategy(prompt.LLM.Value)
-                                                            .BuildPromptResponse(prompt.Message, 
+                                                            .BuildPromptResponse(prompt.Message,
                                                                                  systemPrompt.ToString());
 
                     //Passo 7: Envia a resposta para o usuário:
@@ -144,34 +120,75 @@ namespace New.AI.Chat.Services
                 else
                 {
                     AddError("Nenhum contexto relevante foi encontrado na base de código.");
-                }                
-            }           
+                }
+            }
+        }
+
+        private async Task<List<Guid>> GetLowGranularitySemanticIDs(Pgvector.Vector promptVector)
+        {
+            return await _aiDbContext.DbSetKDLowGranularity
+                                     .OrderBy(p => p.Embedding.L2Distance(promptVector))
+                                     .Take(2)
+                                     .Select(p => p.Id)
+                                     .ToListAsync();
+        }
+
+        private async Task<List<Guid>> GetLowGranularityWithHighGranularitySemanticIDs(Pgvector.Vector promptVector)
+        {
+            return await _aiDbContext.DbSetKDHighGranularity
+                                     .OrderBy(c => c.Embedding.L2Distance(promptVector))
+                                     .Take(3)
+                                     .Select(c => c.LowGranularityId)
+                                     .ToListAsync();
+        }
+
+        private async Task<List<Guid>> GetLowGranularityWithHighGranularityLexicalIDs(string message)
+        {
+            var technicalTerms = await ExtractTechnicalTerms(message);
+            var allHighGranularityLexicalIDs = new List<Guid>();
+
+            if (technicalTerms.Any())
+            {
+                foreach (var terms in technicalTerms)
+                {
+                    var highGranularityLexicalIDs = await _aiDbContext.DbSetKDHighGranularity
+                                                                      .Where(c => EF.Functions.ILike(c.ContentText, $"%{terms}%"))
+                                                                      .Take(2)
+                                                                      .Select(c => c.LowGranularityId)
+                                                                      .ToListAsync();
+
+                    allHighGranularityLexicalIDs.AddRange(highGranularityLexicalIDs);
+                }
+            }
+
+            return allHighGranularityLexicalIDs;
         }
 
         private async Task<List<string>> ExtractTechnicalTerms(string message)
         {
-            var terms = new HashSet<string>();
+            var terms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var response = await _LLMStrategyFactory.GetStrategy(LLMEnum.LightModel)
                                                     .BuildPromptResponse(message);
 
             if (!string.IsNullOrWhiteSpace(response))
             {
-                var extractTerms = JsonSerializer.Deserialize<List<string>>(
-                                                response, 
-                                                new JsonSerializerOptions 
-                                                { 
-                                                    PropertyNameCaseInsensitive = true 
-                                                });
-
-                if (extractTerms != null)
+                try
                 {
-                    terms = extractTerms.Where(T => !string.IsNullOrWhiteSpace(T))
-                                        .Select(T => T.Trim())
-                                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var cleanResponse = response.Replace("```json", "").Replace("```", "").Trim();
+                    var extractTerms = JsonSerializer.Deserialize<List<string>>(cleanResponse,
+                                                                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                    _logger.LogInformation($"Termos extraídos pela IA: {string.Join(", ", extractTerms)}");
-                }                
+                    if (extractTerms != null)
+                    {
+                        foreach (var T in extractTerms.Where(X => !string.IsNullOrWhiteSpace(X))) terms.Add(T.Trim());
+                        _logger.LogInformation("Termos extraídos pela IA: {Termos}", string.Join(", ", terms));
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "A IA retornou um formato inválido ao extrair termos. Resposta crua: {Response}", response);
+                }
             }
 
             return terms.ToList();

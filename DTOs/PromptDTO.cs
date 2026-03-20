@@ -7,7 +7,7 @@ namespace New.AI.Chat.DTOs
         public PromptDTO()
         {
             Message = string.Empty;
-            LLM = LLMEnum.Qwen;
+            LLM = LLMEnum.Qwen15;
         }
 
         public string Message { get; set; }

@@ -1,7 +1,7 @@
-﻿using Microsoft.OpenApi;
-using Microsoft.SemanticKernel;
+﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using New.AI.Chat.Enumerators;
+using New.AI.Chat.Extensions;
 using New.AI.Chat.Services.Interfaces;
 
 namespace New.AI.Chat.Services
@@ -9,11 +9,22 @@ namespace New.AI.Chat.Services
     public class NerLLMService : ILLMStrategyService
     {
         private const string DEFAULT_PROMPT = @"
-            Você é um extrator de termos técnicos de código-fonte em C#, Delphi, Xml, HTML, TypeScript além regras de negócio de ERP.
-            Sua saída deve ser APENAS um JSON válido no formato: { [""string"", ""string""] }
-            Não forneça explicações, não crie código, apenas o JSON.
-            Ignore palavras comuns da língua portuguesa.
-            Foque em: siglas, nomes de variáveis (CamelCase, snake_case), nomes de tabelas, nomes de métodos ou termos técnicos (ex: DIFAL, SQL, API).";
+            Você é um extrator ESTRITO de entidades técnicas.
+            Sua única função é encontrar siglas, códigos e nomes de programas na frase do utilizador e devolver um JSON no formato [""termo1"", ""termo2""].
+
+            REGRAS ABSOLUTAS:
+            1. Você DEVE extrair a palavra EXATAMENTE como o utilizador digitou.
+            2. É ESTRITAMENTE PROIBIDO adicionar extensões de arquivos (ex: .cs, .aspx, .sql).
+            3. É ESTRITAMENTE PROIBIDO adicionar caminhos de pastas (ex: DataTables/, Views/).
+
+            Exemplos de comportamento exigido:
+            Entrada: ""Gostaria de saber em quais arquivos esses código aparecem: CTB0075 e CTB0007""
+            Saída: [""CTB0075"", ""CTB0007""]
+
+            Entrada: ""Como a NFe calcula o ICMS?""
+            Saída: [""NFe"", ""ICMS""]
+
+            Entrada: ""{0}""";
 
         public LLMEnum LLM => LLMEnum.LightModel;
 
@@ -30,7 +41,7 @@ namespace New.AI.Chat.Services
             chatHistory.AddSystemMessage(DEFAULT_PROMPT);
             chatHistory.AddUserMessage(userPrompt);
 
-            var response = await _kernel.GetRequiredService<IChatCompletionService>(LLMEnum.LightModel.GetDisplayName())
+            var response = await _kernel.GetRequiredService<IChatCompletionService>(LLMEnum.Qwen15.GetDescription())
                                         .GetChatMessageContentAsync(chatHistory);
 
             return response.Content;

@@ -1,4 +1,5 @@
 ﻿using Microsoft.SemanticKernel;
+using New.AI.Chat.Enumerators;
 using OpenAI;
 using System.ClientModel;
 
@@ -25,12 +26,17 @@ namespace New.AI.Chat.Extensions
             kernelBuilder.AddOpenAIChatCompletion(
                 modelId: "phi3",
                 openAIClient: clienteOpenAi,
-                serviceId: "phi3");
+                serviceId: LLMEnum.Phi3.GetDescription());
 
             kernelBuilder.AddOpenAIChatCompletion(
                 modelId: "qwen2.5-coder:1.5b",
                 openAIClient: clienteOpenAi,
-                serviceId: "qwen");
+                serviceId:  LLMEnum.Qwen15.GetDescription());
+
+            kernelBuilder.AddOpenAIChatCompletion(
+                modelId: "qwen2.5-coder:7b",
+                openAIClient: clienteOpenAi,
+                serviceId: LLMEnum.Qwen7b.GetDescription());
 
             services.AddSingleton(kernelBuilder.Build());
         }

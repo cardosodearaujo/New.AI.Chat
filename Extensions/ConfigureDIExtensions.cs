@@ -20,6 +20,7 @@ namespace New.AI.Chat.Extensions
         private static void InjectAIServices(this IServiceCollection services)
         {
             services.AddScoped<ILLMStrategyFactoryService, LLMStrategyFactoryService>();
+            services.AddScoped<ILLMStrategyService, GeminiFlashLLMService>();
             services.AddScoped<ILLMStrategyService, Phi3LLMService>();
             services.AddScoped<ILLMStrategyService, Qwen15LLMService>();
             services.AddScoped<ILLMStrategyService, Quen7bLLMService>();

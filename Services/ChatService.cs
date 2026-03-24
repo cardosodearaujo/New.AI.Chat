@@ -62,26 +62,26 @@ namespace New.AI.Chat.Services
                 //Passo 2: Gera o vetor do prompt:
                 var promptVector = new Pgvector.Vector(promptEmbedding?.FirstOrDefault()?.Vector.ToArray());
 
+                //Passo 3: Dispara as buscas de forma paralela:
+                var lowGranularitySemanticIDs =  GetLowGranularitySemanticIDs(promptVector);
+                var lowGranularityWithHighGranularitySemanticIDs = GetLowGranularityWithHighGranularitySemanticIDs(promptVector);
+                var lowGranularityWithHighGranularityLexicalIDs = GetLowGranularityWithHighGranularityLexicalIDs(prompt.Message);
+                await Task.WhenAll(lowGranularitySemanticIDs, lowGranularityWithHighGranularitySemanticIDs, lowGranularityWithHighGranularityLexicalIDs);
+                
+                //Passo 4: unifica os IDs:
                 var lowGranularityIDs = new HashSet<Guid>();
+                lowGranularityIDs.UnionWith(lowGranularitySemanticIDs.Result);
+                lowGranularityIDs.UnionWith(lowGranularityWithHighGranularitySemanticIDs.Result);
+                lowGranularityIDs.UnionWith(lowGranularityWithHighGranularityLexicalIDs.Result);
 
-                //Passo 3: Busca dados de baixa granularidade com base no prompt enviado pelo usuário:
-                lowGranularityIDs.UnionWith(await GetLowGranularitySemanticIDs(promptVector));
-
-                //Passo 4: Busca dados de baixa granulariade a partir de dados de alta granularidade com base no prompt enviado pelo usuário:
-                lowGranularityIDs.UnionWith(await GetLowGranularityWithHighGranularitySemanticIDs(promptVector));
-
-                //Passo 3: Busca os dados de baixa granulariade com base em dados de alta granulariade usando termos especificos extraidos
-                //por IA que estejam no prompt enviado pelo usuário:
-                lowGranularityIDs.UnionWith(await GetLowGranularityWithHighGranularityLexicalIDs(prompt.Message));
-
-                //Passo 4: Busca todas as instancias de baixa granularidade selecionadas nos passos anteriores:
+                //Passo 5: Busca todas as instancias de baixa granularidade selecionadas nos passos anteriores:
                 var referenceData = await _aiDbContext.DbSetKDLowGranularity
                                                       .AsNoTracking()
                                                       .Include(p => p.KnowledgeDocumentInformation)
                                                       .Where(p => lowGranularityIDs.Contains(p.Id))
                                                       .ToListAsync();
 
-                //Passo 5: Caso tenha dados constroi o contexto do prompt:
+                //Passo 6: Caso tenha dados constroi o contexto do prompt:
                 if (referenceData.Any())
                 {
                     var systemPrompt = new StringBuilder();
@@ -97,12 +97,12 @@ namespace New.AI.Chat.Services
                         systemPrompt.AppendLine(reference.ContentText);
                     }
 
-                    //Passo 6: Chama a estatégia para resolver qual LLM irá responder a pergunta:
+                    //Passo 7: Chama a estatégia para resolver qual LLM irá responder a pergunta:
                     var response = await _LLMStrategyFactory.GetStrategy(prompt.LLM.Value)
                                                             .BuildPromptResponse(prompt.Message,
                                                                                  systemPrompt.ToString());
 
-                    //Passo 7: Envia a resposta para o usuário:
+                    //Passo 8: Envia a resposta para o usuário:
                     if (response != null)
                     {
                         Data = new PromptResponseDTO

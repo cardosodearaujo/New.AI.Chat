@@ -7,7 +7,7 @@ namespace New.AI.Chat.Extensions
 {
     public static class ConfigureAIInjectionsExtensions
     {
-        public static void AddAIInjection(this IServiceCollection services, IConfiguration configuration)
+        public static void AddAIInjection(this WebApplicationBuilder builder)
         {
             var openAiOptions = new OpenAIClientOptions
             {
@@ -18,6 +18,11 @@ namespace New.AI.Chat.Extensions
             var clienteOpenAi = new OpenAIClient(new ApiKeyCredential("ignore"), openAiOptions);
 
             var kernelBuilder = Kernel.CreateBuilder();
+
+            kernelBuilder.AddGoogleAIGeminiChatCompletion(
+                modelId: "gemini-1.5-flash",
+                apiKey: builder.Configuration["AI:Google:ApiKey"],
+                serviceId: LLMEnum.GeminiFlash.GetDescription());
 
             kernelBuilder.AddOpenAIEmbeddingGenerator(
                 modelId: "nomic-embed-text",
@@ -31,19 +36,14 @@ namespace New.AI.Chat.Extensions
             kernelBuilder.AddOpenAIChatCompletion(
                 modelId: "qwen2.5-coder:1.5b",
                 openAIClient: clienteOpenAi,
-                serviceId:  LLMEnum.Qwen15.GetDescription());
+                serviceId: LLMEnum.Qwen15.GetDescription());
 
             kernelBuilder.AddOpenAIChatCompletion(
                 modelId: "qwen2.5-coder:7b",
                 openAIClient: clienteOpenAi,
                 serviceId: LLMEnum.Qwen7b.GetDescription());
 
-            kernelBuilder.AddGoogleAIGeminiChatCompletion(
-                modelId: configuration["AI:Google:ModelId"]!,
-                apiKey: configuration["AI:Google:ApiKey"],
-                serviceId: "arquitetoNuvem");
-
-            services.AddSingleton(kernelBuilder.Build());
+            builder.Services.AddSingleton(kernelBuilder.Build());
         }
     }
 }

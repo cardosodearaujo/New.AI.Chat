@@ -15,7 +15,7 @@ namespace New.AI.Chat
             builder.Services.AddDependencyInjection();
             builder.Services.AddControllers();
             builder.Services.AddOpenApi();
-            builder.Services.AddAIInjection(builder.Configuration);
+            builder.AddAIInjection();
             builder.AddDDBContext();
             return builder;
         }

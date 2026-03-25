@@ -279,8 +279,9 @@ Content-Type: application/json
 
 ## 👨‍💻 Autor
 
-**Cardoso de Araújo**
-- GitHub: [@cardosodearaujo](https://github.com/cardosodearaujo)
+**Everaldo Cardoso de Araújo**
+- [Github](https://github.com/cardosodearaujo)
+- [Likedin](https://www.linkedin.com/in/everaldoaraujo)
 
 ---
 

@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Novo Perfil",
+    "Projects": [
+      {
+        "Path": "New.AI.Chat\\New.AI.Chat.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "New.AI.Ingestion.Client\\New.AI.Ingestion.Client.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

@@ -1,5 +1,4 @@
-﻿using Microsoft.SemanticKernel;
-using New.AI.Chat.Enumerators;
+﻿using New.AI.Chat.Enumerators;
 
 namespace New.AI.Chat.Services.Interfaces
 {

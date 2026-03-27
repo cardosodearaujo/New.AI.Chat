@@ -1,12 +1,37 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "D:\\ProjetoIA\\New.AI.Chat\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{DE4342CA-CC9C-D487-3DCC-4082091617F7}|New.AI.Ingestion.Client\\New.AI.Ingestion.Client.csproj|d:\\projetoia\\new.ai.chat\\new.ai.ingestion.client\\services\\readfilesservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DE4342CA-CC9C-D487-3DCC-4082091617F7}|New.AI.Ingestion.Client\\New.AI.Ingestion.Client.csproj|solutionrelative:new.ai.ingestion.client\\services\\readfilesservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ReadFilesService.cs",
+              "DocumentMoniker": "D:\\ProjetoIA\\New.AI.Chat\\New.AI.Ingestion.Client\\Services\\ReadFilesService.cs",
+              "RelativeDocumentMoniker": "New.AI.Ingestion.Client\\Services\\ReadFilesService.cs",
+              "ToolTip": "D:\\ProjetoIA\\New.AI.Chat\\New.AI.Ingestion.Client\\Services\\ReadFilesService.cs",
+              "RelativeToolTip": "New.AI.Ingestion.Client\\Services\\ReadFilesService.cs",
+              "ViewState": "AgIAABQAAAAAAAAAAAASwDMAAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-27T19:19:47.6Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }

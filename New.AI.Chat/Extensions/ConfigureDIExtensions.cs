@@ -15,6 +15,7 @@ namespace New.AI.Chat.Extensions
         {
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<IIngestionService, IngestionService>();
+            services.AddScoped<IFileService, FileService>();
         }
 
         private static void InjectAIServices(this IServiceCollection services)

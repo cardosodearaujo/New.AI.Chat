@@ -9,11 +9,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Remove="Controllers\ChatController.cs~RF13cb61f0.TMP" />
+	  <Compile Remove=".github\**" />
+	  <Content Remove=".github\**" />
+	  <EmbeddedResource Remove=".github\**" />
+	  <None Remove=".github\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include=".github\copilot-instructions.md" />
+		<None Remove="Controllers\ChatController.cs~RF13cb61f0.TMP" />
 	</ItemGroup>
 
 	<ItemGroup>

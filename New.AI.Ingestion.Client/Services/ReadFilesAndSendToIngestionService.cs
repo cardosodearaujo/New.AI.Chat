@@ -49,7 +49,7 @@ namespace New.AI.Ingestion.Client.Services
 
                     var percentual = (loteCount * 100) / totalLotes;
 
-                    Console.WriteLine($"{DateNow} - Enviando lote {loteCount} de {totalLotes} - {percentual}%.");
+                    Console.WriteLine($"{DateNow} - Enviando lote {loteCount} de {totalLotes} - {percentual}% - Total de {listOfFiles.Count} arquivos.");
 
                     var response = await _httpClient.PostAsJsonAsync("/api/Ingestion", ingestion);
 

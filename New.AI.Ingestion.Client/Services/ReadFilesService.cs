@@ -6,7 +6,7 @@ namespace New.AI.Ingestion.Client.Services
     {
         private List<FileInfo> ListOfFiles = new List<FileInfo>();
 
-        private readonly string[] _extensions = { ".cs", ".pas" };
+        private readonly string[] _extensions = { ".cs", ".pas", ".html", ".ts", ".js", ".scss", ".css", ".xml", ".sql" , ".resx", ".json", ".aspx", ".master", ".xls", ".ascx", ".mdx"};
 
         private int _interator = 0;
 
@@ -22,7 +22,7 @@ namespace New.AI.Ingestion.Client.Services
         {
             await Read(folderPath, print);
 
-            ListOfFiles = ListOfFiles.OrderByDescending(I => I.Length).ToList();
+            ListOfFiles = ListOfFiles.OrderBy(I => I.Length).ToList();
 
             return ListOfFiles;
         }

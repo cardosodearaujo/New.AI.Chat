@@ -14,9 +14,10 @@ namespace New.AI.Chat
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddDependencyInjection();
             builder.Services.AddControllers();
-            builder.Services.AddOpenApi();
+            builder.Services.AddOpenApiCustom();
             builder.AddAIInjection();
             builder.AddDDBContext();
+            builder.AddJwtAuthentication();
             return builder;
         }
 
@@ -24,10 +25,10 @@ namespace New.AI.Chat
         {
             if (app.Environment.IsDevelopment())
             {
-                app.MapOpenApi();
-                app.UseSwaggerUI();
+                app.MapOpenApiCustom();
             }
             app.UseHttpsRedirection();
+            app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
             return app;

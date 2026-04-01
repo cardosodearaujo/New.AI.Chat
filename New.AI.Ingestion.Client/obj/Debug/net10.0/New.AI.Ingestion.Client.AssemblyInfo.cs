@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("New.AI.Ingestion.Client")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3616e3af5e354961a2fa9794cffc202d43d80fd8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5bab1fb81d89f4cc9812cb0ed710e6d177082199")]
 [assembly: System.Reflection.AssemblyProductAttribute("New.AI.Ingestion.Client")]
 [assembly: System.Reflection.AssemblyTitleAttribute("New.AI.Ingestion.Client")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

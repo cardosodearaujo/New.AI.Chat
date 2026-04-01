@@ -5,6 +5,7 @@ using New.AI.Chat.Data;
 using New.AI.Chat.DTOs;
 using New.AI.Chat.Enumerators;
 using New.AI.Chat.Services.Interfaces;
+using New.AI.Chat.Services.Interfaces.AIInterfaces;
 using Pgvector.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json;

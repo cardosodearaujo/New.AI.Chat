@@ -3,9 +3,9 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using New.AI.Chat.DTOs;
 using New.AI.Chat.Enumerators;
 using New.AI.Chat.Extensions;
-using New.AI.Chat.Services.Interfaces;
+using New.AI.Chat.Services.Interfaces.AIInterfaces;
 
-namespace New.AI.Chat.Services
+namespace New.AI.Chat.Services.AIServices
 {
     public class Quen7bLLMService : ILLMStrategyService
     {

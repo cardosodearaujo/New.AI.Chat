@@ -1,6 +1,6 @@
 ﻿using New.AI.Chat.Enumerators;
 
-namespace New.AI.Chat.Services.Interfaces
+namespace New.AI.Chat.Services.Interfaces.AIInterfaces
 {
     public interface ILLMStrategyFactoryService
     {

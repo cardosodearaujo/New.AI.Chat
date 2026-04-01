@@ -1,5 +1,7 @@
 ﻿using New.AI.Chat.Services;
+using New.AI.Chat.Services.AIServices;
 using New.AI.Chat.Services.Interfaces;
+using New.AI.Chat.Services.Interfaces.AIInterfaces;
 
 namespace New.AI.Chat.Extensions
 {

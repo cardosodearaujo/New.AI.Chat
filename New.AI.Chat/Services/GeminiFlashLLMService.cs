@@ -1,5 +1,6 @@
 ﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using New.AI.Chat.DTOs;
 using New.AI.Chat.Enumerators;
 using New.AI.Chat.Extensions;
 using New.AI.Chat.Services.Interfaces;
@@ -24,6 +25,17 @@ namespace New.AI.Chat.Services
 
         public LLMEnum LLM => LLMEnum.GeminiFlash;
 
+        public LLMParametersDTO Parameters
+        {
+            get =>
+                new LLMParametersDTO
+                {
+                    TakeLowGranularitySemanticIDs = 3,
+                    TakeLowGranularityWithHighGranularitySemanticIDs = 5,
+                    TakeLowGranularityWithHighGranularityLexicalIDs = 5
+                };
+        }
+
         private readonly Kernel _kernel;
 
         public GeminiFlashLLMService(Kernel kernel)
@@ -39,7 +51,7 @@ namespace New.AI.Chat.Services
             chatHistory.AddSystemMessage(finalSystemPrompt);
             chatHistory.AddUserMessage(userPrompt);
 
-            var response = await _kernel.GetRequiredService<IChatCompletionService>(LLMEnum.Qwen15.GetDescription())
+            var response = await _kernel.GetRequiredService<IChatCompletionService>(LLMEnum.GeminiFlash.GetDescription())
                                         .GetChatMessageContentAsync(chatHistory);
 
             return response.Content;

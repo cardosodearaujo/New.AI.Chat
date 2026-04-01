@@ -62,17 +62,19 @@ namespace New.AI.Chat.Services
                 //Passo 2: Gera o vetor do prompt:
                 var promptVector = new Pgvector.Vector(promptEmbedding?.FirstOrDefault()?.Vector.ToArray());
 
+                //Seleciona o LLM que irá reposnder a pergunta do usuário:
+                var llm = _LLMStrategyFactory.GetStrategy(prompt.LLM.Value);
+
                 //Passo 3: Dispara as buscas de forma paralela:
-                var lowGranularitySemanticIDs =  GetLowGranularitySemanticIDs(promptVector);
-                var lowGranularityWithHighGranularitySemanticIDs = GetLowGranularityWithHighGranularitySemanticIDs(promptVector);
-                var lowGranularityWithHighGranularityLexicalIDs = GetLowGranularityWithHighGranularityLexicalIDs(prompt.Message);
-                await Task.WhenAll(lowGranularitySemanticIDs, lowGranularityWithHighGranularitySemanticIDs, lowGranularityWithHighGranularityLexicalIDs);
+                var lowGranularitySemanticIDs =  await GetLowGranularitySemanticIDs(promptVector, llm.Parameters);
+                var lowGranularityWithHighGranularitySemanticIDs = await GetLowGranularityWithHighGranularitySemanticIDs(promptVector, llm.Parameters);
+                var lowGranularityWithHighGranularityLexicalIDs = await GetLowGranularityWithHighGranularityLexicalIDs(prompt.Message,llm.Parameters);
                 
                 //Passo 4: unifica os IDs:
                 var lowGranularityIDs = new HashSet<Guid>();
-                lowGranularityIDs.UnionWith(lowGranularitySemanticIDs.Result);
-                lowGranularityIDs.UnionWith(lowGranularityWithHighGranularitySemanticIDs.Result);
-                lowGranularityIDs.UnionWith(lowGranularityWithHighGranularityLexicalIDs.Result);
+                lowGranularityIDs.UnionWith(lowGranularitySemanticIDs);
+                lowGranularityIDs.UnionWith(lowGranularityWithHighGranularitySemanticIDs);
+                lowGranularityIDs.UnionWith(lowGranularityWithHighGranularityLexicalIDs);
 
                 //Passo 5: Busca todas as instancias de baixa granularidade selecionadas nos passos anteriores:
                 var referenceData = await _aiDbContext.DbSetKDLowGranularity
@@ -98,9 +100,7 @@ namespace New.AI.Chat.Services
                     }
 
                     //Passo 7: Chama a estatégia para resolver qual LLM irá responder a pergunta:
-                    var response = await _LLMStrategyFactory.GetStrategy(prompt.LLM.Value)
-                                                            .BuildPromptResponse(prompt.Message,
-                                                                                 systemPrompt.ToString());
+                    var response = await llm.BuildPromptResponse(prompt.Message, systemPrompt.ToString());
 
                     //Passo 8: Envia a resposta para o usuário:
                     if (response != null)
@@ -124,25 +124,25 @@ namespace New.AI.Chat.Services
             }
         }
 
-        private async Task<List<Guid>> GetLowGranularitySemanticIDs(Pgvector.Vector promptVector)
+        private async Task<List<Guid>> GetLowGranularitySemanticIDs(Pgvector.Vector promptVector, LLMParametersDTO llmParameters)
         {
             return await _aiDbContext.DbSetKDLowGranularity
                                      .OrderBy(p => p.Embedding.L2Distance(promptVector))
-                                     .Take(2)
+                                     .Take(llmParameters.TakeLowGranularitySemanticIDs)
                                      .Select(p => p.Id)
                                      .ToListAsync();
         }
 
-        private async Task<List<Guid>> GetLowGranularityWithHighGranularitySemanticIDs(Pgvector.Vector promptVector)
+        private async Task<List<Guid>> GetLowGranularityWithHighGranularitySemanticIDs(Pgvector.Vector promptVector, LLMParametersDTO llmParameters)
         {
             return await _aiDbContext.DbSetKDHighGranularity
                                      .OrderBy(c => c.Embedding.L2Distance(promptVector))
-                                     .Take(3)
+                                     .Take(llmParameters.TakeLowGranularityWithHighGranularitySemanticIDs)
                                      .Select(c => c.LowGranularityId)
                                      .ToListAsync();
         }
 
-        private async Task<List<Guid>> GetLowGranularityWithHighGranularityLexicalIDs(string message)
+        private async Task<List<Guid>> GetLowGranularityWithHighGranularityLexicalIDs(string message, LLMParametersDTO llmParameters)
         {
             var technicalTerms = await ExtractTechnicalTerms(message);
             var allHighGranularityLexicalIDs = new List<Guid>();
@@ -153,7 +153,7 @@ namespace New.AI.Chat.Services
                 {
                     var highGranularityLexicalIDs = await _aiDbContext.DbSetKDHighGranularity
                                                                       .Where(c => EF.Functions.ILike(c.ContentText, $"%{terms}%"))
-                                                                      .Take(2)
+                                                                      .Take(llmParameters.TakeLowGranularityWithHighGranularityLexicalIDs)
                                                                       .Select(c => c.LowGranularityId)
                                                                       .ToListAsync();
 

@@ -20,7 +20,7 @@ namespace New.AI.Chat.Extensions
             var kernelBuilder = Kernel.CreateBuilder();
 
             kernelBuilder.AddGoogleAIGeminiChatCompletion(
-                modelId: "gemini-1.5-flash",
+                modelId: "gemini-2.5-flash",
                 apiKey: builder.Configuration["AI:Google:ApiKey"],
                 serviceId: LLMEnum.GeminiFlash.GetDescription());
 

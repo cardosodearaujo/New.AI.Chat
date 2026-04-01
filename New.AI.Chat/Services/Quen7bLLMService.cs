@@ -1,5 +1,6 @@
 ﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using New.AI.Chat.DTOs;
 using New.AI.Chat.Enumerators;
 using New.AI.Chat.Extensions;
 using New.AI.Chat.Services.Interfaces;
@@ -23,6 +24,17 @@ namespace New.AI.Chat.Services
             </contexto>";
 
         public LLMEnum LLM => LLMEnum.Qwen7b;
+
+        public LLMParametersDTO Parameters
+        {
+            get =>
+                new LLMParametersDTO
+                {
+                    TakeLowGranularitySemanticIDs = 1,
+                    TakeLowGranularityWithHighGranularitySemanticIDs = 2,
+                    TakeLowGranularityWithHighGranularityLexicalIDs = 2
+                };
+        }
 
         private readonly Kernel _kernel;
 

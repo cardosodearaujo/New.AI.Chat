@@ -1,5 +1,6 @@
 ﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using New.AI.Chat.DTOs;
 using New.AI.Chat.Enumerators;
 using New.AI.Chat.Extensions;
 using New.AI.Chat.Services.Interfaces;
@@ -19,6 +20,16 @@ namespace New.AI.Chat.Services
 
         private readonly Kernel _kernel;
 
+        public LLMParametersDTO Parameters
+        {
+            get =>
+                new LLMParametersDTO
+                {
+                    TakeLowGranularitySemanticIDs = 1,
+                    TakeLowGranularityWithHighGranularitySemanticIDs = 1,
+                    TakeLowGranularityWithHighGranularityLexicalIDs = 3
+                };
+        }
         public Phi3LLMService(Kernel kernel)
         {
             _kernel = kernel;

@@ -15,6 +15,8 @@ namespace New.AI.Chat.Extensions
             {
                 options.SwaggerEndpoint("/swagger/v1/swagger.json", "New.AI.Chat API v1");
                 options.RoutePrefix = string.Empty;
+                // Inject custom JS (development helper) to provide a lightweight Authorize UI
+                options.InjectJavascript("/swagger-custom.js");
             });
         }
     }

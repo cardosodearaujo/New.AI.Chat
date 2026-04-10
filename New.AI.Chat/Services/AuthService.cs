@@ -13,7 +13,6 @@ namespace New.AI.Chat.Services
     {
         private readonly JwtSettings _jwtSettings;
 
-        // In-memory users (username -> password). In production replace with DB or identity provider.
         private readonly Dictionary<string, string> _users = new()
         {
             { "admin", "P@ssw0rd" },
@@ -25,31 +24,54 @@ namespace New.AI.Chat.Services
             _jwtSettings = jwtOptions.Value;
         }
 
+        private static byte[] DecodeKey(string rawKey)
+        {
+            if (string.IsNullOrWhiteSpace(rawKey))
+                return Array.Empty<byte>();
+
+            try
+            {
+                var b = Convert.FromBase64String(rawKey);
+                if (b.Length > 0) return b;
+            }
+            catch { }
+
+            try
+            {
+                var b = Convert.FromHexString(rawKey);
+                if (b.Length > 0) return b;
+            }
+            catch { }
+
+            return Encoding.UTF8.GetBytes(rawKey);
+        }
+
         protected override Task Validate(LoginDTO entry)
         {
             if (entry == null)
             {
-                AddError("Payload inválido.");
-                return Task.CompletedTask;
+                AddError("Dados inválidos.");
             }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(entry.Username))
+                    AddError("O nome do usuário é obrigatório.");
 
-            if (string.IsNullOrWhiteSpace(entry.Username)) AddError("O nome do utilizador é obrigatório.");
-            if (string.IsNullOrWhiteSpace(entry.Password)) AddError("A password é obrigatória.");
+                if (string.IsNullOrWhiteSpace(entry.Password))
+                    AddError("A senha é obrigatória.");
+
+                if (!_users.TryGetValue(entry.Username, out var storedPassword) || storedPassword != entry.Password)
+                    AddError("Credenciais inválidas.");
+
+            }
 
             return Task.CompletedTask;
         }
 
         protected override Task DoProcess(LoginDTO entry)
         {
-            // valida in-memory
-            if (!_users.TryGetValue(entry.Username, out var storedPassword) || storedPassword != entry.Password)
-            {
-                AddError("Credenciais inválidas.");
-                return Task.CompletedTask;
-            }
-
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_jwtSettings.Key);
+            var key = DecodeKey(_jwtSettings.Key);
 
             var claims = new List<Claim>
             {

@@ -25,6 +25,7 @@ namespace New.AI.Chat
         {
             if (app.Environment.IsDevelopment())
             {
+                app.UseStaticFiles();
                 app.MapOpenApiCustom();
             }
             app.UseHttpsRedirection();

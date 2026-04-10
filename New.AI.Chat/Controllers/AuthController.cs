@@ -11,7 +11,9 @@ namespace New.AI.Chat.Controllers
     {
         private readonly IAuthService _authService;
 
-        public AuthController(ILogger<DefaultController<LoginDTO, AuthResponseDTO>> logger, IAuthService authService) : base(logger)
+        public AuthController(
+            ILogger<DefaultController<LoginDTO, AuthResponseDTO>> logger, 
+            IAuthService authService) : base(logger)
         {
             _authService = authService;
         }
@@ -23,15 +25,7 @@ namespace New.AI.Chat.Controllers
             await _authService.Process(login);
 
             if (_authService.HasErrors())
-            {
-                // Se as credenciais são inválidas, retornamos 401
-                if (_authService.Messages.Any(m => m.Contains("Credenciais inválidas")))
-                {
-                    return Unauthorized();
-                }
-
-                return BadRequest(_authService.Messages);
-            }
+                return Unauthorized(_authService.Messages);
 
             return Ok(_authService.Data);
         }

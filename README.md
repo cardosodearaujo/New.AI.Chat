@@ -1,6 +1,5 @@
 # 🚀 New.AI.Chat - RAG Pipeline & AI Orchestrator
 
-<<<<<<< Updated upstream
 Uma implementação de RAG (Retrieval-Augmented Generation) orientada a consultas sobre código e documentação técnica. Fornece APIs para ingestão de conteúdo, indexação vetorial e um endpoint de chat que compõe contexto retrieval + LLM.
 
 Índice
@@ -31,12 +30,6 @@ Objetivo: permitir consultas em linguagem natural sobre código e documentos com
 - `New.AI.Chat/` — API ASP.NET Core (entrada principal).
 - `New.AI.Ingestion.Client/` — CLI para ingestão em lote.
 - `New.AI.Chat.Tests/` — testes unitários e integração leve.
-
-Arquivos importantes:
-- `Program.cs` — composição da aplicação (DI, middlewares, Swagger).
-- `Extensions/ConfigureAuthExtensions.cs` — configuração JWT.
-- `wwwroot/swagger-custom.js` — helper dev para inserir token no Swagger UI (apenas em dev).
-- `appsettings.json` — configurações base (não coloque segredos reais aqui).
 
 **Pré-requisitos**
 --------------

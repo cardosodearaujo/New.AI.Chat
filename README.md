@@ -4,6 +4,77 @@ Uma solução robusta de **RAG (Retrieval-Augmented Generation)** projetada para
 
 ---
 
+### 🔐 Notas sobre Autenticação e Swagger (desenvolvimento)
+
+- A aplicação exige JWT Bearer para a maioria dos endpoints. A seção de configuração está em `JwtSettings` no `appsettings.json` (ou variáveis de ambiente/user secrets).
+- O projeto aceita a chave do `JwtSettings:Key` em três formatos: Base64, hex (ex.: 64 chars hex) ou string simples (UTF-8). Tanto o middleware quanto o gerador de token usam a mesma lógica de decodificação.
+- Para testes locais, há um script customizado do Swagger que adiciona uma pequena UI (campo + botões) para salvar um token em `localStorage` e injetá-lo nas requisições. Arquivo: `wwwroot/swagger-custom.js`. Este recurso é apenas para desenvolvimento.
+
+Exemplo rápido (não comitar segredos reais):
+
+```json
+"JwtSettings": {
+  "Key": "a31fc47b2d905e6b8b9adf4c3ed27af15b9c6093e2117a4db24f586a2cde7188",
+  "Issuer": "New.AI.Chat",
+  "Audience": "New.AI.Chat.Clients",
+  "ExpirationMinutes": 60
+}
+```
+
+Use `dotnet user-secrets` ou variáveis de ambiente (`JwtSettings__Key`) em desenvolvimento e um cofre (ex.: Azure Key Vault) em produção.
+
+---
+
+## 🧪 Testes
+
+- Projeto de testes: `New.AI.Chat.Tests` (xUnit, Moq, FluentAssertions)
+- Como executar: `dotnet test New.AI.Chat.Tests/New.AI.Chat.Tests.csproj`
+- Estado atual (execução local durante alterações): 10 testes — 10 verdes.
+
+---
+
+## 📌 Mudanças detectadas / documentadas
+
+- Adicionado `wwwroot/swagger-custom.js` para facilitar testes locais com Bearer token (UI leve). Documentado acima.
+- `ConfigureAuthExtensions` passou a validar e decodificar a chave JWT (Base64/hex/UTF8) e a exigir chave mínima para evitar erros de assinatura.
+- `AuthService` usa a mesma lógica de decodificação para garantir que tokens assinados localmente sejam válidos.
+
+---
+
+## 🇬🇧 English Version
+
+### 📌 About the Project
+
+`New.AI.Chat` allows ingesting documents and source code and querying them using natural language, producing answers via LLMs. The system combines vector semantic search, lexical search and entity extraction to improve answer precision.
+
+### Authentication and Swagger notes (development)
+
+- The API requires JWT Bearer for most endpoints. Configure `JwtSettings` in `appsettings.json`, user secrets or environment variables.
+- The `JwtSettings:Key` accepts Base64, hex (e.g. 64-char hex) or plain UTF-8 string. Both the middleware and token generator decode the key the same way.
+- For local testing a small Swagger helper script is provided to input a token and attach it to requests: `wwwroot/swagger-custom.js`. This is intended for development only.
+
+Quick example (do not commit secrets):
+
+```json
+"JwtSettings": {
+  "Key": "a31fc47b2d905e6b8b9adf4c3ed27af15b9c6093e2117a4db24f586a2cde7188",
+  "Issuer": "New.AI.Chat",
+  "Audience": "New.AI.Chat.Clients",
+  "ExpirationMinutes": 60
+}
+```
+
+### Tests
+
+- Test project: `New.AI.Chat.Tests` (xUnit, Moq, FluentAssertions)
+- Run: `dotnet test New.AI.Chat.Tests/New.AI.Chat.Tests.csproj`
+- Current local run: 10 tests — all passing.
+
+---
+
+Se precisar, eu atualizo o README com instruções passo-a-passo para configurar `dotnet user-secrets`, exemplos de variáveis de ambiente e um pequeno trecho de troubleshooting do JWT (erros comuns como "The signature key was not found").
+
+
 ## 📌 Sobre o Projeto
 
 O **New.AI.Chat** permite ingerir documentos e código-fonte e consultá-los via linguagem natural, com respostas geradas por LLMs. O sistema combina busca semântica vetorial, busca léxica e extração de entidades para maximizar a precisão das respostas.
@@ -261,6 +332,58 @@ Content-Type: application/json
   "dateTime": "25/03/2026 10:30:00"
 }
 ```
+
+---
+
+## 🔐 Autenticação (JWT)
+
+Foi adicionada autenticação via Bearer token (JWT) para proteger todos os endpoints.
+
+- Endpoint de login: `POST /api/auth/login`
+  - Payload: `{ "username": "string", "password": "string" }`
+  - Resposta: `{ "token": "<jwt>", "expiresAt": "<iso-date>" }`
+  - Observação: o endpoint de login está marcado com `[AllowAnonymous]`; todos os demais endpoints exigem autenticação por padrão (política global).
+
+- Implementação inicial: usuários em memória (apenas para desenvolvimento):
+  - `admin` / `P@ssw0rd`
+  - `user` / `password`
+
+- Configuração (`appsettings.json` ou variáveis de ambiente): seção `JwtSettings` com as propriedades `Key`, `Issuer`, `Audience` e `ExpirationMinutes`.
+
+Exemplo:
+
+```json
+"JwtSettings": {
+  "Key": "uma-chave-muito-longa-e-secreta-mude-em-producao",
+  "Issuer": "New.AI.Chat",
+  "Audience": "New.AI.Chat.Clients",
+  "ExpirationMinutes": 60
+}
+```
+
+Em produção, substitua o backend de autenticação (usuários em memória) por Identity, banco de dados ou provedor OAuth/OpenID Connect.
+
+---
+
+## 🧪 Projeto de Testes
+
+Foi adicionado um projeto de testes `New.AI.Chat.Tests` com cobertura unitária dos controllers e testes de integração leves para validar o pipeline de autenticação e endpoints protegidos.
+
+Principais pontos:
+- Frameworks: `xUnit`, `Moq`, `FluentAssertions`, `Microsoft.AspNetCore.Mvc.Testing`.
+- Testes incluídos:
+  - Unitários dos controllers: `AuthController`, `ChatController`, `IngestionController`, `FileController`.
+  - Integração leve: valida fluxo de autenticação e chamadas protegidas (usa `WebApplicationFactory<Program>` e um `Test` authentication scheme para isolar validação JWT durante os testes).
+
+Como executar os testes:
+
+```bash
+dotnet test New.AI.Chat.Tests/New.AI.Chat.Tests.csproj
+```
+
+Os testes usam mocks para substituir dependências pesadas (DB, kernel, serviços externos) garantindo execução rápida e determinística.
+
+Observação: há avisos de conflito de versões do EF Core nas saídas — isso não impede os testes atuais (que usam mocks), mas é recomendado alinhar versões caso deseje testes que usem `AIDbContext` real com `InMemory`.
 
 ---
 

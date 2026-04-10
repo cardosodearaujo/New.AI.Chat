@@ -1,5 +1,6 @@
-# New.AI.Chat
+# 🚀 New.AI.Chat - RAG Pipeline & AI Orchestrator
 
+<<<<<<< Updated upstream
 Uma implementação de RAG (Retrieval-Augmented Generation) orientada a consultas sobre código e documentação técnica. Fornece APIs para ingestão de conteúdo, indexação vetorial e um endpoint de chat que compõe contexto retrieval + LLM.
 
 Índice
@@ -211,11 +212,138 @@ sequenceDiagram
 **License**
 -------
 MIT
+=======
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-blue)](https://www.postgresql.org/)
+[![Semantic Kernel](https://img.shields.io/badge/Semantic%20Kernel-Orchestrator-orange)](https://github.com/microsoft/semantic-kernel)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+>>>>>>> Stashed changes
 
+`New.AI.Chat` é uma solução avançada de **RAG (Retrieval-Augmented Generation)** projetada para consultas inteligentes sobre bases de conhecimento técnicas, código-fonte e documentação. A plataforma utiliza orquestração multi-modelo (LLMs) e busca vetorial híbrida para fornecer respostas precisas com rastreabilidade de fontes.
 
 ---
 
-If you want, I can also:
-- Add step-by-step `dotnet user-secrets` examples to the README (no secrets included),
-- Provide a short troubleshooting section for common JWT errors (e.g., signature key missing),
-- Generate a ready-to-open PR description template summarizing changes made on the current feature branch.
+## 🇧🇷 Português
+
+### 🌟 Destaques
+- **Hybrid Retrieval:** Combina busca vetorial (pgvector) com técnicas de NER (Named Entity Recognition) para melhor recall técnico.
+- **Multi-LLM Strategy:** Suporte a múltiplos modelos via Semantic Kernel (Gemini 2.5, Phi-3, Qwen 2.5).
+- **Ingestão Granular:** Processamento hierárquico de documentos (Alta/Baixa granularidade) para contextos otimizados.
+- **Modern Stack:** Desenvolvido com as últimas tecnologias .NET 10 e Entity Framework Core.
+
+### 🏗️ Arquitetura
+A aplicação é dividida em três componentes principais:
+1. **New.AI.Chat (API):** O core da aplicação, responsável pelo processamento RAG, gestão vetorial e endpoints de chat.
+2. **New.AI.Ingestion.Client (CLI):** Ferramenta utilitária para ingestão em lote de arquivos locais.
+3. **New.AI.Chat.Tests:** Suíte de testes automatizados para garantir a integridade do pipeline.
+
+### 🚀 Como Começar
+
+#### Pré-requisitos
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Ollama](https://ollama.ai/) (para modelos locais como Phi-3 e Qwen)
+
+#### 1. Configurar Infraestrutura (Docker)
+```bash
+docker-compose -f New.AI.Chat/docker-compose-database.yml up -d
+```
+
+#### 2. Configurar Segredos e Variáveis
+Configure sua chave de API do Google Gemini (necessária para o modelo `gemini-2.5-flash`):
+```bash
+dotnet user-secrets set "AI:Google:ApiKey" "SUA_CHAVE_AQUI" --project New.AI.Chat
+dotnet user-secrets set "JwtSettings:Key" "UMA_CHAVE_FORTE_BASE64_OU_HEX" --project New.AI.Chat
+```
+
+#### 3. Executar Migrations
+```bash
+dotnet ef database update --project New.AI.Chat
+```
+
+#### 4. Rodar a API
+```bash
+dotnet run --project New.AI.Chat
+```
+
+### 🛠️ Configuração de Modelos (Ollama)
+A API espera os seguintes modelos rodando localmente via Ollama (porta 11434):
+- `phi3`
+- `qwen2.5-coder:1.5b`
+- `qwen2.5-coder:7b`
+- `nomic-embed-text` (para embeddings)
+
+---
+
+## 🇬🇧 English
+
+### 🌟 Key Features
+- **Hybrid Retrieval:** Combines vector search (pgvector) with NER (Named Entity Recognition) for improved technical recall.
+- **Multi-LLM Strategy:** Support for multiple models via Semantic Kernel (Gemini 2.5, Phi-3, Qwen 2.5).
+- **Granular Ingestion:** Hierarchical document processing (High/Low granularity) for optimized context.
+- **Modern Stack:** Built with the latest .NET 10 technologies and Entity Framework Core.
+
+### 🏗️ Architecture
+The project is structured into three main components:
+1. **New.AI.Chat (API):** The core engine handling RAG processing, vector management, and chat endpoints.
+2. **New.AI.Ingestion.Client (CLI):** Batch utility for ingesting local files into the system.
+3. **New.AI.Chat.Tests:** Automated testing suite for pipeline integrity.
+
+### 🚀 Getting Started
+
+#### Prerequisites
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Ollama](https://ollama.ai/) (for local models like Phi-3 and Qwen)
+
+#### 1. Infrastructure Setup (Docker)
+```bash
+docker-compose -f New.AI.Chat/docker-compose-database.yml up -d
+```
+
+#### 2. Secrets and Variables Configuration
+Configure your Google Gemini API Key (required for `gemini-2.5-flash`):
+```bash
+dotnet user-secrets set "AI:Google:ApiKey" "YOUR_KEY_HERE" --project New.AI.Chat
+dotnet user-secrets set "JwtSettings:Key" "A_STRONG_BASE64_OR_HEX_KEY" --project New.AI.Chat
+```
+
+#### 3. Database Migrations
+```bash
+dotnet ef database update --project New.AI.Chat
+```
+
+#### 4. Run the API
+```bash
+dotnet run --project New.AI.Chat
+```
+
+---
+
+## 🔒 Security & Authentication
+- **JWT Bearer:** API access is secured via JWT.
+- **Swagger Integration:** Includes a custom UI helper (`swagger-custom.js`) to easily inject tokens during development.
+- **Best Practices:** Never commit secrets. Use `user-secrets` locally and Key Vault in production.
+
+## 🧪 Testing
+Run the test suite using:
+```bash
+dotnet test New.AI.Chat.Tests/New.AI.Chat.Tests.csproj
+```
+
+## 📂 Project Structure
+```text
+├── New.AI.Chat/              # ASP.NET Core API & RAG Logic
+│   ├── Controllers/          # API Endpoints
+│   ├── Data/                 # EF Core, Mappings, Migrations
+│   ├── Services/             # Business Logic & AI Strategies
+│   └── Extensions/           # Dependency Injection & Config
+├── New.AI.Ingestion.Client/  # CLI tool for mass file ingestion
+└── New.AI.Chat.Tests/        # Unit & Integration tests
+```
+
+## 📜 License
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+*Developed with ❤️ using .NET 10 and Semantic Kernel.*

@@ -103,33 +103,11 @@ Arquivos importantes:
 -------------------------
 Fluxo de ingestão (simplificado):
 
-```mermaid
-graph TD
-  Client[Client CLI / API] --> Ingestion[IngestionService]
-  Ingestion --> Validation{Validation}
-  Validation -- valid --> Chunking[Chunking - macro and micro]
-  Chunking --> Embeddings[Embeddings (nomic/local)]
-  Embeddings --> Persistence[Persistence (Postgres + pgvector)]
-```
+![Ingestion flow](docs/images/ingestion.svg)
 
 Fluxo de consulta (RAG hybrid):
 
-```mermaid
-sequenceDiagram
-  participant User
-  participant API
-  participant VectorIndex
-  participant NER
-  participant LLM
-
-  User->>API: POST /api/chat (prompt)
-  API->>VectorIndex: Vector search (low/high granularity)
-  API->>NER: Extract technical terms
-  API->>VectorIndex: Lexical search with terms (ILike)
-  API->>LLM: Send prompt + context
-  LLM-->>API: Answer
-  API-->>User: PromptResponseDTO
-```
+![Chat flow](docs/images/chatflow.svg)
 
 **Boas práticas e segurança**
 -------------------------

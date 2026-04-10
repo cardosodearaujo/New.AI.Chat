@@ -107,9 +107,9 @@ Fluxo de ingestão (simplificado):
 flowchart TB
   A[Cliente CLI / API] --> B[IngestionService]
   B --> C{Validação}
-  C -->|Valido| D[Chunking (macro/micro)]
+  C -- Valido --> D[Chunking - macro e micro]
   D --> E[Embeddings (nomic/local)]
-  E --> F[Persistência (Postgres + pgvector)]
+  E --> F[Persistência - Postgres + pgvector]
 ```
 
 Fluxo de consulta (RAG hybrid):

@@ -72,9 +72,6 @@ Quick example (do not commit secrets):
 
 ---
 
-Se precisar, eu atualizo o README com instruções passo-a-passo para configurar `dotnet user-secrets`, exemplos de variáveis de ambiente e um pequeno trecho de troubleshooting do JWT (erros comuns como "The signature key was not found").
-
-
 ## 📌 Sobre o Projeto
 
 O **New.AI.Chat** permite ingerir documentos e código-fonte e consultá-los via linguagem natural, com respostas geradas por LLMs. O sistema combina busca semântica vetorial, busca léxica e extração de entidades para maximizar a precisão das respostas.

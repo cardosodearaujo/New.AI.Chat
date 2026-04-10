@@ -107,7 +107,7 @@ Fluxo de ingestão (simplificado):
 graph TD
   Client[Client CLI / API] --> Ingestion[IngestionService]
   Ingestion --> Validation{Validation}
-  Validation -- valid --> Chunking[Chunking (macro & micro)]
+  Validation -- valid --> Chunking[Chunking - macro and micro]
   Chunking --> Embeddings[Embeddings (nomic/local)]
   Embeddings --> Persistence[Persistence (Postgres + pgvector)]
 ```

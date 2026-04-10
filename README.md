@@ -186,3 +186,9 @@ dotnet test
 
 ---
 *Este projeto é uma demonstração técnica de alto nível da aplicação de IA Generativa em ambientes corporativos.*
+
+## 📩 Contato
+
+Desenvolvido por **Everaldo Cardoso de Araújo**.
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/everaldoaraujo)

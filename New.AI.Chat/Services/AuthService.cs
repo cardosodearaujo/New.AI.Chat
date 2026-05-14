@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using New.AI.Chat.Configurations;
+using New.AI.Chat.Data;
 using New.AI.Chat.DTOs;
+using New.AI.Chat.Models;
 using New.AI.Chat.Services.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -12,16 +14,17 @@ namespace New.AI.Chat.Services
     public class AuthService : DefaultService<LoginDTO, AuthResponseDTO>, IAuthService
     {
         private readonly JwtSettings _jwtSettings;
+        private readonly AIDbContext _dbContext;
+        private readonly IPasswordHashService _passwordHashService;
 
-        private readonly Dictionary<string, string> _users = new()
-        {
-            { "admin", "P@ssw0rd" },
-            { "user", "password" }
-        };
-
-        public AuthService(IOptions<JwtSettings> jwtOptions)
+        public AuthService(
+            IOptions<JwtSettings> jwtOptions, 
+            AIDbContext dbContext,
+            IPasswordHashService passwordHashService)
         {
             _jwtSettings = jwtOptions.Value;
+            _dbContext = dbContext;
+            _passwordHashService = passwordHashService;
         }
 
         private static byte[] DecodeKey(string rawKey)
@@ -59,30 +62,47 @@ namespace New.AI.Chat.Services
 
                 if (string.IsNullOrWhiteSpace(entry.Password))
                     AddError("A senha é obrigatória.");
-
-                if (!_users.TryGetValue(entry.Username, out var storedPassword) || storedPassword != entry.Password)
-                    AddError("Credenciais inválidas.");
-
             }
 
             return Task.CompletedTask;
         }
 
-        protected override Task DoProcess(LoginDTO entry)
+        protected override async Task DoProcess(LoginDTO entry)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = DecodeKey(_jwtSettings.Key);
+            var loginAttemptTime = DateTime.UtcNow;
+
+            // Try to find the user
+            var user = _dbContext.DbSetUsers.FirstOrDefault(u => u.Username == entry.Username && u.IsActive);
+
+            if (user == null)
+            {
+                // Log failed attempt
+                await LogAttempt(Guid.Empty, entry.Username, string.Empty, loginAttemptTime.AddMinutes(_jwtSettings.ExpirationMinutes));
+                AddError("Credenciais inválidas.");
+                return;
+            }
+
+            var passwordValid = _passwordHashService.VerifyPassword(entry.Password, user.PasswordHash);
+
+            if (!passwordValid)
+            {
+                await LogAttempt(user.Id, user.Username, string.Empty, loginAttemptTime.AddMinutes(_jwtSettings.ExpirationMinutes));
+                AddError("Credenciais inválidas.");
+                return;
+            }
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, entry.Username),
-                new Claim(ClaimTypes.NameIdentifier, entry.Username),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes),
+                Expires = loginAttemptTime.AddMinutes(_jwtSettings.ExpirationMinutes),
                 Issuer = _jwtSettings.Issuer,
                 Audience = _jwtSettings.Audience,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -94,10 +114,33 @@ namespace New.AI.Chat.Services
             Data = new AuthResponseDTO
             {
                 Token = tokenString,
-                ExpiresAt = tokenDescriptor.Expires ?? DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes)
+                ExpiresAt = tokenDescriptor.Expires ?? loginAttemptTime.AddMinutes(_jwtSettings.ExpirationMinutes)
             };
 
-            return Task.CompletedTask;
+            // Log successful authentication
+            await LogAttempt(user.Id, user.Username, tokenString, Data.ExpiresAt);
+        }
+
+        private async Task LogAttempt(Guid userId, string username, string token, DateTime tokenExpiresAt)
+        {
+            try
+            {
+                var log = new AuthenticationLog
+                {
+                    UserId = userId,
+                    Username = username ?? string.Empty,
+                    Token = token ?? string.Empty,
+                    LoginDateTime = DateTime.UtcNow,
+                    TokenExpiresAt = tokenExpiresAt
+                };
+
+                await _dbContext.DbSetAuthenticationLogs.AddAsync(log);
+                await _dbContext.SaveChangesAsync();
+            }
+            catch
+            {
+                // Swallow logging errors so authentication flow is not affected.
+            }
         }
     }
 }

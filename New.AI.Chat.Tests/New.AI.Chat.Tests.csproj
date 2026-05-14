@@ -19,4 +19,8 @@
   <ItemGroup>
     <ProjectReference Include="..\New.AI.Chat\New.AI.Chat.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\" />
+  </ItemGroup>
 </Project>

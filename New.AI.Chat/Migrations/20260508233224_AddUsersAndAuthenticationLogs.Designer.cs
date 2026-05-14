@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using New.AI.Chat.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace New.AI.Chat.Migrations
 {
     [DbContext(typeof(AIDbContext))]
-    partial class AIDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260508233224_AddUsersAndAuthenticationLogs")]
+    partial class AddUsersAndAuthenticationLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,33 +31,27 @@ namespace New.AI.Chat.Migrations
             modelBuilder.Entity("New.AI.Chat.Models.AuthenticationLog", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("AL_ID");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("LoginDateTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("AL_LOGIN_DATE_TIME")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("AL_TOKEN");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("TokenExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("AL_TOKEN_EXPIRES_AT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("AL_USER_ID");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("AL_USERNAME");
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
@@ -62,7 +59,7 @@ namespace New.AI.Chat.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AuthenticationLogs_AL", (string)null);
+                    b.ToTable("AuthenticationLogs", (string)null);
                 });
 
             modelBuilder.Entity("New.AI.Chat.Models.KnowledgeDocument", b =>
@@ -207,47 +204,39 @@ namespace New.AI.Chat.Migrations
             modelBuilder.Entity("New.AI.Chat.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("USR_ID");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("USR_CREATED_AT")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("USR_EMAIL");
+                        .HasColumnType("character varying(255)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("USR_FULL_NAME");
+                        .HasColumnType("character varying(255)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("USR_IS_ACTIVE");
+                        .HasDefaultValue(true);
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("USR_PASSWORD_HASH");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("USR_UPDATED_AT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("USR_USERNAME");
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
@@ -259,18 +248,7 @@ namespace New.AI.Chat.Migrations
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Users_USR", (string)null);
-                });
-
-            modelBuilder.Entity("New.AI.Chat.Models.AuthenticationLog", b =>
-                {
-                    b.HasOne("New.AI.Chat.Models.User", "User")
-                        .WithMany("AuthenticationLogs")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("New.AI.Chat.Models.KnowledgeDocumentHighGranularity", b =>
@@ -303,11 +281,6 @@ namespace New.AI.Chat.Migrations
             modelBuilder.Entity("New.AI.Chat.Models.KnowledgeDocumentLowGranularity", b =>
                 {
                     b.Navigation("HighGranularityList");
-                });
-
-            modelBuilder.Entity("New.AI.Chat.Models.User", b =>
-                {
-                    b.Navigation("AuthenticationLogs");
                 });
 #pragma warning restore 612, 618
         }

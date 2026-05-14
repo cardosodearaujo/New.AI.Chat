@@ -12,6 +12,8 @@ namespace New.AI.Chat.Data
         public DbSet<KnowledgeDocumentHighGranularity> DbSetKDHighGranularity { get; set; }
         public DbSet<KnowledgeDocumentLowGranularity> DbSetKDLowGranularity { get; set; }
         public DbSet<KnowledgeDocument> DbSetKnowledgeDocument { get; set; }
+        public DbSet<User> DbSetUsers { get; set; }
+        public DbSet<AuthenticationLog> DbSetAuthenticationLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -28,6 +30,9 @@ namespace New.AI.Chat.Data
 
             //Tabela antiga com dados de altissima granulidade.
             modelBuilder.MapKnowledgeDocument();
+
+            modelBuilder.MapUser();
+            modelBuilder.MapAuthenticationLog();
 
             base.OnModelCreating(modelBuilder);
         }

@@ -20,7 +20,13 @@ namespace New.AI.Chat.Extensions
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IPasswordHashService, PasswordHashService>();
-            services.AddScoped<IUsersService, UsersService>();
+            // Users: register individual services per controller method
+            services.AddScoped<IGetUsersService, GetUsersService>();
+            services.AddScoped<IGetUserByIdService, GetUserByIdService>();
+            services.AddScoped<ICreateUserService, CreateUserService>();
+            services.AddScoped<IUpdateUserService, UpdateUserService>();
+            services.AddScoped<IDeleteUserService, DeleteUserService>();
+            services.AddScoped<IChangeUserPasswordService, ChangeUserPasswordService>();
             services.AddScoped<IGetAuthenticationLogsService, GetAuthenticationLogsService>();
         }
 

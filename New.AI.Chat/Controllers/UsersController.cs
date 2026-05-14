@@ -11,55 +11,77 @@ namespace New.AI.Chat.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private readonly IUsersService _usersService;
+        private readonly IGetUsersService _getUsersService;
+        private readonly IGetUserByIdService _getUserByIdService;
+        private readonly ICreateUserService _createUserService;
+        private readonly IUpdateUserService _updateUserService;
+        private readonly IDeleteUserService _deleteUserService;
+        private readonly IChangeUserPasswordService _changeUserPasswordService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(ILogger<UsersController> logger, IUsersService usersService)
+        public UsersController(
+            ILogger<UsersController> logger,
+            IGetUsersService getUsersService,
+            IGetUserByIdService getUserByIdService,
+            ICreateUserService createUserService,
+            IUpdateUserService updateUserService,
+            IDeleteUserService deleteUserService,
+            IChangeUserPasswordService changeUserPasswordService)
         {
             _logger = logger;
-            _usersService = usersService;
+            _getUsersService = getUsersService;
+            _getUserByIdService = getUserByIdService;
+            _createUserService = createUserService;
+            _updateUserService = updateUserService;
+            _deleteUserService = deleteUserService;
+            _changeUserPasswordService = changeUserPasswordService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var data = await _usersService.GetAll();
-            return Ok(data);
+            await _getUsersService.Process(null);
+            if (_getUsersService.HasErrors()) return BadRequest(_getUsersService.Messages);
+            return Ok(_getUsersService.Data);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(Guid id)
         {
-            var user = await _usersService.GetById(id);
-            if (user == null) return NotFound();
-            return Ok(user);
+            await _getUserByIdService.Process(id);
+            if (_getUserByIdService.HasErrors()) return NotFound();
+            return Ok(_getUserByIdService.Data);
         }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateUserDTO dto)
         {
-            var created = await _usersService.Create(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            await _createUserService.Process(dto);
+            if (_createUserService.HasErrors()) return BadRequest(_createUserService.Messages);
+            return CreatedAtAction(nameof(Get), new { id = _createUserService.Data.Id }, _createUserService.Data);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserDTO dto)
         {
-            await _usersService.Update(id, dto);
+            await _updateUserService.Process((id, dto));
+            if (_updateUserService.HasErrors()) return BadRequest(_updateUserService.Messages);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _usersService.Delete(id);
+            await _deleteUserService.Process(id);
+            if (_deleteUserService.HasErrors()) return BadRequest(_deleteUserService.Messages);
             return NoContent();
         }
 
         [HttpPost("{id}/change-password")]
         public async Task<IActionResult> ChangePassword(Guid id, [FromBody] ChangePasswordDTO dto)
         {
-            await _usersService.ChangePassword(id, dto);
+            await _changeUserPasswordService.Process((id, dto));
+            if (_changeUserPasswordService.HasErrors()) return BadRequest(_changeUserPasswordService.Messages);
             return NoContent();
         }
     }

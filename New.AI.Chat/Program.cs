@@ -1,4 +1,6 @@
 using New.AI.Chat.Extensions;
+using New.AI.Chat.Data;
+using New.AI.Chat.Services.Interfaces;
 
 namespace New.AI.Chat
 {
@@ -32,6 +34,9 @@ namespace New.AI.Chat
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
+            // seed data if necessary
+            app.UseSeedData();
+
             return app;
         }
     }

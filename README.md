@@ -151,6 +151,18 @@ A API utiliza JWT. Primeiro, obtenha o token:
 - **POST** `/api/Auth/login`
 - **Body:** `{ "username": "admin", "password": "..." }`
 
+### Usuários
+Endpoints para gerenciar usuários:
+- **GET** `/api/Users` - retorna lista de usuários
+- **GET** `/api/Users/{id}` - retorna dados de um usuário específico
+- **POST** `/api/Users` - cria um usuário
+  - Body: CreateUserDTO { fullName, email, username, password }
+- **PUT** `/api/Users/{id}` - atualiza um usuário
+  - Body: UpdateUserDTO { fullName, email }
+- **DELETE** `/api/Users/{id}` - remove um usuário
+- **POST** `/api/Users/{id}/change-password` - altera senha do usuário
+  - Body: ChangePasswordDTO { currentPassword, newPassword }
+
 ### Chat / Consultas
 - **POST** `/api/Chat`
 - **Body:**

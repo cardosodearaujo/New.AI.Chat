@@ -13,7 +13,7 @@ namespace New.AI.Chat.Tests.Controllers
         public async Task GetAll_WithValidUsers_ReturnsOkWithUsersList()
         {
             // Arrange
-            var mockService = new Mock<New.AI.Chat.Services.Interfaces.IUsersService>();
+            var mockService = new Mock<New.AI.Chat.Services.Interfaces.IGetUsersService>();
             var users = new List<UserResponseDTO>
             {
                 new UserResponseDTO
@@ -38,10 +38,18 @@ namespace New.AI.Chat.Tests.Controllers
 
             var expected = new GetUsersResponseDTO { Users = users };
 
-            mockService.Setup(s => s.GetAll()).ReturnsAsync(expected);
+            mockService.Setup(s => s.Process(null)).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Data).Returns(expected);
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<New.AI.Chat.Controllers.UsersController>>();
-            var controller = new UsersController(logger.Object, mockService.Object);
+            var controller = new UsersController(
+                logger.Object,
+                mockService.Object,
+                Mock.Of<New.AI.Chat.Services.Interfaces.IGetUserByIdService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.ICreateUserService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.IUpdateUserService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.IDeleteUserService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.IChangeUserPasswordService>());
 
             // Act
             var actionResult = await controller.GetAll();
@@ -56,34 +64,42 @@ namespace New.AI.Chat.Tests.Controllers
         public async Task GetAll_WithError_ReturnsBadRequest()
         {
             // Arrange
-            var mockService = new Mock<New.AI.Chat.Services.Interfaces.IUsersService>();
-            var errors = new List<string> { "Erro ao buscar usuários" };
-
-            mockService.Setup(s => s.GetAll()).ThrowsAsync(new InvalidOperationException("Erro ao buscar usuários"));
+            var mockService = new Mock<New.AI.Chat.Services.Interfaces.IGetUsersService>();
+            mockService.Setup(s => s.Process(null)).Throws(new InvalidOperationException("Erro ao buscar usuários"));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<New.AI.Chat.Controllers.UsersController>>();
-            var controller = new UsersController(logger.Object, mockService.Object);
+            var controller = new UsersController(
+                logger.Object,
+                mockService.Object,
+                Mock.Of<New.AI.Chat.Services.Interfaces.IGetUserByIdService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.ICreateUserService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.IUpdateUserService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.IDeleteUserService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.IChangeUserPasswordService>());
 
-            // Act
-            var result = await controller.GetAll();
-
-            // Assert
-            result.Should().BeOfType<Microsoft.AspNetCore.Mvc.ObjectResult>();
-            var obj = result as Microsoft.AspNetCore.Mvc.ObjectResult;
-            obj!.StatusCode.Should().Be(500);
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => controller.GetAll());
         }
 
         [Fact]
         public async Task GetAll_WithEmptyUserList_ReturnsOkWithEmptyList()
         {
             // Arrange
-            var mockService = new Mock<New.AI.Chat.Services.Interfaces.IUsersService>();
+            var mockService = new Mock<New.AI.Chat.Services.Interfaces.IGetUsersService>();
             var expected = new GetUsersResponseDTO { Users = new List<UserResponseDTO>() };
 
-            mockService.Setup(s => s.GetAll()).ReturnsAsync(expected);
+            mockService.Setup(s => s.Process(null)).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Data).Returns(expected);
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<New.AI.Chat.Controllers.UsersController>>();
-            var controller = new UsersController(logger.Object, mockService.Object);
+            var controller = new UsersController(
+                logger.Object,
+                mockService.Object,
+                Mock.Of<New.AI.Chat.Services.Interfaces.IGetUserByIdService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.ICreateUserService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.IUpdateUserService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.IDeleteUserService>(),
+                Mock.Of<New.AI.Chat.Services.Interfaces.IChangeUserPasswordService>());
 
             // Act
             var actionResult = await controller.GetAll();

@@ -10,7 +10,7 @@ namespace New.AI.Chat.Services.AIServices
     public class Qwen15LLMService : ILLMStrategyService
     {
         private const string DEFAULT_PROMPT = @"
-            Aja como um desenvolvedor C# ou delphi. Leia o contexto abaixo e responda à pergunta.
+            Aja como um desenvolvedor C# ou Delphi. Leia o contexto abaixo e responda à pergunta.
             Regra 1: Use apenas o código do contexto.
             Regra 2: Seja direto e curto.
             Regra 3: Se não achar a resposta, diga 'Não encontrado'.

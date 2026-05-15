@@ -50,15 +50,13 @@ namespace New.AI.Chat.Tests.Controllers
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
 
             // Act
-            var result = await controller.GetAll();
+            var actionResult = await controller.GetAll();
 
             // Assert
-            result.Should().NotBeNull();
-            result.Result.Should().BeOfType<Microsoft.AspNetCore.Http.HttpResults.Ok<GetAuthenticationLogsResponseDTO>>();
-            result.Result.Should().As<Microsoft.AspNetCore.Http.HttpResults.Ok<GetAuthenticationLogsResponseDTO>>()
-                .Value.Logs.Should().HaveCount(2);
-            result.Result.Should().As<Microsoft.AspNetCore.Http.HttpResults.Ok<GetAuthenticationLogsResponseDTO>>()
-                .Value.TotalRecords.Should().Be(2);
+            actionResult.Should().NotBeNull();
+            actionResult.Should().BeOfType<Microsoft.AspNetCore.Mvc.OkObjectResult>();
+            var ok = actionResult as Microsoft.AspNetCore.Mvc.OkObjectResult;
+            ok!.Value.Should().BeEquivalentTo(expected);
         }
 
         [Fact]
@@ -76,11 +74,11 @@ namespace New.AI.Chat.Tests.Controllers
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
 
             // Act
-            var result = await controller.GetAll();
+            var actionResult = await controller.GetAll();
 
             // Assert
-            result.Should().NotBeNull();
-            result.Result.Should().BeOfType<Microsoft.AspNetCore.Http.HttpResults.BadRequest<IList<string>>>();
+            actionResult.Should().NotBeNull();
+            actionResult.Should().BeOfType<Microsoft.AspNetCore.Mvc.BadRequestObjectResult>();
         }
 
         [Fact]
@@ -102,15 +100,16 @@ namespace New.AI.Chat.Tests.Controllers
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
 
             // Act
-            var result = await controller.GetAll();
+            var actionResult = await controller.GetAll();
 
             // Assert
-            result.Should().NotBeNull();
-            result.Result.Should().BeOfType<Microsoft.AspNetCore.Http.HttpResults.Ok<GetAuthenticationLogsResponseDTO>>();
-            result.Result.Should().As<Microsoft.AspNetCore.Http.HttpResults.Ok<GetAuthenticationLogsResponseDTO>>()
-                .Value.Logs.Should().BeEmpty();
-            result.Result.Should().As<Microsoft.AspNetCore.Http.HttpResults.Ok<GetAuthenticationLogsResponseDTO>>()
-                .Value.TotalRecords.Should().Be(0);
+            actionResult.Should().NotBeNull();
+            actionResult.Should().BeOfType<Microsoft.AspNetCore.Mvc.OkObjectResult>();
+            var ok = actionResult as Microsoft.AspNetCore.Mvc.OkObjectResult;
+            var data = ok!.Value as GetAuthenticationLogsResponseDTO;
+            data.Should().NotBeNull();
+            data!.Logs.Should().BeEmpty();
+            data.TotalRecords.Should().Be(0);
         }
 
         [Fact]
@@ -155,10 +154,13 @@ namespace New.AI.Chat.Tests.Controllers
             var result = await controller.GetAll();
 
             // Assert
-            var okResult = result.Result as Microsoft.AspNetCore.Http.HttpResults.Ok<GetAuthenticationLogsResponseDTO>;
+            var actionResult = await controller.GetAll();
+            var okResult = actionResult as Microsoft.AspNetCore.Mvc.OkObjectResult;
             okResult.Should().NotBeNull();
-            okResult.Value.Logs[0].IsSuccessful.Should().BeTrue();
-            okResult.Value.Logs[1].IsSuccessful.Should().BeFalse();
+            var data = okResult!.Value as GetAuthenticationLogsResponseDTO;
+            data.Should().NotBeNull();
+            data!.Logs[0].IsSuccessful.Should().BeTrue();
+            data.Logs[1].IsSuccessful.Should().BeFalse();
         }
     }
 }

@@ -4,16 +4,16 @@ using New.AI.Chat.Services.Interfaces;
 
 namespace New.AI.Chat.Controllers
 {
-    public class DefaultController<E, S> : ControllerBase
+    public class DefaultController : ControllerBase
     {
-        private readonly ILogger<DefaultController<E, S>> _logger;
+        private readonly ILogger<DefaultController> _logger;
 
-        public DefaultController(ILogger<DefaultController<E, S>> logger)
+        public DefaultController(ILogger<DefaultController> logger)
         {
             _logger = logger;
         }
 
-        protected async Task<Results<Ok<S>, BadRequest<IList<string>>>> Process(IDefaultService<E, S> service, E entry)
+        protected async Task<Results<Ok<S>, BadRequest<IList<string>>>> Process<E,S>(IDefaultService<E, S> service, E entry)
         {
             try
             {

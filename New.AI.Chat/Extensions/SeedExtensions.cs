@@ -10,16 +10,9 @@ namespace New.AI.Chat.Extensions
         {
             using var scope = app.Services.CreateScope();
             var services = scope.ServiceProvider;
-            try
-            {
-                var context = services.GetRequiredService<AIDbContext>();
-                var passwordService = services.GetRequiredService<IPasswordHashService>();
-                context.EnsureSeedData(passwordService).GetAwaiter().GetResult();
-            }
-            catch
-            {
-                // ignore seed errors
-            }
+            var context = services.GetRequiredService<AIDbContext>();
+            var passwordService = services.GetRequiredService<IPasswordHashService>();
+            context.EnsureSeedData(passwordService).GetAwaiter().GetResult();
 
             return app;
         }

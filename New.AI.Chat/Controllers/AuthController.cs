@@ -7,12 +7,12 @@ namespace New.AI.Chat.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : DefaultController<LoginDTO, AuthResponseDTO>
+    public class AuthController : DefaultController
     {
         private readonly IAuthService _authService;
 
         public AuthController(
-            ILogger<DefaultController<LoginDTO, AuthResponseDTO>> logger, 
+            ILogger<DefaultController> logger, 
             IAuthService authService) : base(logger)
         {
             _authService = authService;

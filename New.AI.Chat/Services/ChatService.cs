@@ -55,7 +55,7 @@ namespace New.AI.Chat.Services
 
         protected override async Task DoProcess(PromptDTO prompt)
         {
-            //Passo1: Incorpora o prompt:
+            //Passo 1: Incorpora o prompt:
             var promptEmbedding = await _vectorGenerator.GenerateAsync([prompt.Message]);
 
             if (promptEmbedding.Any())

@@ -22,14 +22,12 @@ namespace New.AI.Chat.Extensions
         {
             if (value == null) return string.Empty;
 
-            // Busca no cache; se não existir, executa a função de Reflection e salva
             return _descriptionCache.GetOrAdd(value, enumValue =>
             {
                 FieldInfo? field = enumValue.GetType().GetField(enumValue.ToString());
 
                 if (field == null) return enumValue.ToString();
 
-                // Extrai o atributo Description
                 var attribute = field.GetCustomAttribute<DescriptionAttribute>();
 
                 return attribute == null ? enumValue.ToString() : attribute.Description;

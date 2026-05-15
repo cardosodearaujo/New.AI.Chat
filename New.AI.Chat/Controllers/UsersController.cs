@@ -2,14 +2,12 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using New.AI.Chat.DTOs;
 using New.AI.Chat.Services.Interfaces;
-using New.AI.Chat.DTOs;
-
 
 namespace New.AI.Chat.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : ControllerBase
+    public class UsersController : DefaultController
     {
         private readonly IGetUsersService _getUsersService;
         private readonly IGetUserByIdService _getUserByIdService;
@@ -20,15 +18,15 @@ namespace New.AI.Chat.Controllers
         private readonly ILogger<UsersController> _logger;
 
         public UsersController(
-            ILogger<UsersController> logger,
+            ILogger<DefaultController> logger,
             IGetUsersService getUsersService,
             IGetUserByIdService getUserByIdService,
             ICreateUserService createUserService,
             IUpdateUserService updateUserService,
             IDeleteUserService deleteUserService,
-            IChangeUserPasswordService changeUserPasswordService)
+            IChangeUserPasswordService changeUserPasswordService) : base(logger)
         {
-            _logger = logger;
+            _logger = logger as ILogger<UsersController> ?? throw new ArgumentNullException(nameof(logger));
             _getUsersService = getUsersService;
             _getUserByIdService = getUserByIdService;
             _createUserService = createUserService;
@@ -38,51 +36,39 @@ namespace New.AI.Chat.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<Results<Ok<GetUsersResponseDTO>, BadRequest<IList<string>>>> GetAll()
         {
-            await _getUsersService.Process(null);
-            if (_getUsersService.HasErrors()) return BadRequest(_getUsersService.Messages);
-            return Ok(_getUsersService.Data);
+            return await Process(_getUsersService, null);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
+        public async Task<Results<Ok<UserResponseDTO>, BadRequest<IList<string>>>> Get(Guid id)
         {
-            await _getUserByIdService.Process(id);
-            if (_getUserByIdService.HasErrors()) return NotFound();
-            return Ok(_getUserByIdService.Data);
+            return await Process(_getUserByIdService, id);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateUserDTO dto)
+        public async Task<Results<Ok<UserResponseDTO>, BadRequest<IList<string>>>> Create([FromBody] CreateUserDTO dto)
         {
-            await _createUserService.Process(dto);
-            if (_createUserService.HasErrors()) return BadRequest(_createUserService.Messages);
-            return CreatedAtAction(nameof(Get), new { id = _createUserService.Data.Id }, _createUserService.Data);
+            return await Process(_createUserService, dto);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserDTO dto)
+        public async Task<Results<Ok<bool>, BadRequest<IList<string>>>> Update(Guid id, [FromBody] UpdateUserDTO dto)
         {
-            await _updateUserService.Process((id, dto));
-            if (_updateUserService.HasErrors()) return BadRequest(_updateUserService.Messages);
-            return NoContent();
+            return await Process(_updateUserService, (id, dto));
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        public async Task<Results<Ok<bool>, BadRequest<IList<string>>>> Delete(Guid id)
         {
-            await _deleteUserService.Process(id);
-            if (_deleteUserService.HasErrors()) return BadRequest(_deleteUserService.Messages);
-            return NoContent();
+            return await Process(_deleteUserService, id);
         }
 
         [HttpPost("{id}/change-password")]
-        public async Task<IActionResult> ChangePassword(Guid id, [FromBody] ChangePasswordDTO dto)
+        public async Task<Results<Ok<bool>, BadRequest<IList<string>>>> ChangePassword(Guid id, [FromBody] ChangePasswordDTO dto)
         {
-            await _changeUserPasswordService.Process((id, dto));
-            if (_changeUserPasswordService.HasErrors()) return BadRequest(_changeUserPasswordService.Messages);
-            return NoContent();
+            return await Process(_changeUserPasswordService, (id, dto));
         }
     }
 }

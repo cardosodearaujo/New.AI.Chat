@@ -7,10 +7,10 @@ namespace New.AI.Chat.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FileController : DefaultController<FileQueryDTO, bool>
+    public class FileController : DefaultController
     {
         private readonly IFileService _fileService;
-        public FileController(ILogger<DefaultController<FileQueryDTO, bool>> logger, IFileService fileService) : base(logger)
+        public FileController(ILogger<DefaultController> logger, IFileService fileService) : base(logger)
         {
             _fileService = fileService;
         }

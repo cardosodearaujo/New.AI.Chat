@@ -34,7 +34,6 @@ namespace New.AI.Chat
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
-            // seed data if necessary
             app.UseSeedData();
 
             return app;

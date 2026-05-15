@@ -8,8 +8,6 @@ namespace New.AI.Chat.Models
         public string Token { get; set; } = string.Empty;
         public DateTime LoginDateTime { get; set; } = DateTime.UtcNow;
         public DateTime TokenExpiresAt { get; set; }
-
-        // Navigation
         public User? User { get; set; }
     }
 }

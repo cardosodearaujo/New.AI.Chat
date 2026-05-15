@@ -25,7 +25,7 @@ namespace New.AI.Chat.Tests.Controllers
             var controller = new AuthController(logger.Object, mockService.Object);
 
             // Act
-            var result = await controller.Login(new LoginDTO { Username = "admin", Password = "P@ssw0rd" });
+            var result = await controller.Login(new LoginDTO { Username = "admin", Password = "Abc@123" });
 
             // Assert
             result.Should().BeOfType<OkObjectResult>();

@@ -77,7 +77,6 @@ namespace New.AI.Chat.Extensions
                 };
             });
 
-            // Make authorization required by default for all endpoints
             builder.Services.AddAuthorization(options =>
             {
                 options.FallbackPolicy = new AuthorizationPolicyBuilder()

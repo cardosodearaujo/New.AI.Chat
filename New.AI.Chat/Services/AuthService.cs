@@ -73,12 +73,10 @@ namespace New.AI.Chat.Services
             var key = DecodeKey(_jwtSettings.Key);
             var loginAttemptTime = DateTime.UtcNow;
 
-            // Try to find the user
             var user = _dbContext.DbSetUsers.FirstOrDefault(u => u.Username == entry.Username && u.IsActive);
 
             if (user == null)
             {
-                // Log failed attempt
                 await LogAttempt(Guid.Empty, entry.Username, string.Empty, loginAttemptTime.AddMinutes(_jwtSettings.ExpirationMinutes));
                 AddError("Credenciais inválidas.");
                 return;
@@ -117,7 +115,6 @@ namespace New.AI.Chat.Services
                 ExpiresAt = tokenDescriptor.Expires ?? loginAttemptTime.AddMinutes(_jwtSettings.ExpirationMinutes)
             };
 
-            // Log successful authentication
             await LogAttempt(user.Id, user.Username, tokenString, Data.ExpiresAt);
         }
 
@@ -139,7 +136,6 @@ namespace New.AI.Chat.Services
             }
             catch
             {
-                // Swallow logging errors so authentication flow is not affected.
             }
         }
     }

@@ -35,37 +35,37 @@ namespace New.AI.Chat.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<GetUsersResponseDTO>> GetAll()
         {
             return await Process(_getUsersService, null);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
+        public async Task<ActionResult<UserResponseDTO>> Get(Guid id)
         {
             return await Process(_getUserByIdService, id);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateUserDTO dto)
+        public async Task<ActionResult<UserResponseDTO>> Create([FromBody] CreateUserDTO dto)
         {
             return await Process(_createUserService, dto);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserDTO dto)
+        public async Task<ActionResult<bool>> Update(Guid id, [FromBody] UpdateUserDTO dto)
         {
             return await Process(_updateUserService, (id, dto));
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        public async Task<ActionResult<bool>> Delete(Guid id)
         {
             return await Process(_deleteUserService, id);
         }
 
         [HttpPost("{id}/change-password")]
-        public async Task<IActionResult> ChangePassword(Guid id, [FromBody] ChangePasswordDTO dto)
+        public async Task<ActionResult<bool>> ChangePassword(Guid id, [FromBody] ChangePasswordDTO dto)
         {
             return await Process(_changeUserPasswordService, (id, dto));
         }

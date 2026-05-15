@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using New.AI.Chat.DTOs;
 using New.AI.Chat.Services.Interfaces;
 
@@ -19,7 +18,7 @@ namespace New.AI.Chat.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendMessage(PromptDTO message)
+        public async Task<ActionResult<PromptResponseDTO>> SendMessage(PromptDTO message)
         {
             return await Process(_chatService, message);
         }

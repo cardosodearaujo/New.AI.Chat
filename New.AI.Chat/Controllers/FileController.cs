@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using New.AI.Chat.DTOs;
 using New.AI.Chat.Services.Interfaces;
@@ -16,7 +15,7 @@ namespace New.AI.Chat.Controllers
         }
 
         [HttpGet("exists")]
-        public async Task<IActionResult> Exists([FromQuery] FileQueryDTO file)
+        public async Task<ActionResult<bool>> Exists([FromQuery] FileQueryDTO file)
         {
             return await Process(_fileService, file);
         }

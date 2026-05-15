@@ -1,6 +1,5 @@
 using New.AI.Chat.Extensions;
-using New.AI.Chat.Data;
-using New.AI.Chat.Services.Interfaces;
+using New.AI.Chat.Middleware;
 
 namespace New.AI.Chat
 {
@@ -8,10 +7,12 @@ namespace New.AI.Chat
     {
         public static void Main(string[] args)
         {
-            ConfigureApp(ConfigureBuilder(args).Build()).Run();
+            ConfigureApp(
+                ConfigureBuilder(args)
+                ).Run();
         }
 
-        public static WebApplicationBuilder ConfigureBuilder(string[] args)
+        public static WebApplication ConfigureBuilder(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddDependencyInjection();
@@ -20,7 +21,7 @@ namespace New.AI.Chat
             builder.AddAIInjection();
             builder.AddDDBContext();
             builder.AddJwtAuthentication();
-            return builder;
+            return builder.Build();
         }
 
         private static WebApplication ConfigureApp(WebApplication app)
@@ -31,6 +32,7 @@ namespace New.AI.Chat
                 app.MapOpenApiCustom();
             }
             app.UseHttpsRedirection();
+            app.UseMiddleware<GlobalExceptionMiddleware>();
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();

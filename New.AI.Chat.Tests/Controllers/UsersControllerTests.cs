@@ -56,22 +56,17 @@ namespace New.AI.Chat.Tests.Controllers
 
             // Assert
             actionResult.Should().NotBeNull();
-            if (actionResult is Microsoft.AspNetCore.Mvc.OkObjectResult okObj)
+            if (actionResult.Result is Microsoft.AspNetCore.Mvc.OkObjectResult okObj)
             {
                 okObj.Value.Should().BeEquivalentTo(expected);
             }
+            else if (actionResult.Value is GetUsersResponseDTO dto)
+            {
+                dto.Should().BeEquivalentTo(expected);
+            }
             else
             {
-                var type = actionResult.GetType();
-                if (type.IsGenericType && type.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.Ok") == true)
-                {
-                    var value = type.GetProperty("Value")!.GetValue(actionResult);
-                    value.Should().BeEquivalentTo(expected);
-                }
-                else
-                {
-                    throw new Xunit.Sdk.XunitException($"Expected Ok result but got {type.FullName}");
-                }
+                throw new Xunit.Sdk.XunitException($"Expected Ok result but got {actionResult.GetType().FullName}");
             }
         }
 
@@ -95,8 +90,10 @@ namespace New.AI.Chat.Tests.Controllers
             // Act
             var actionResult = await controller.GetAll();
 
-            // Assert: controller handles exceptions and returns BadRequest
-            actionResult.Should().BeOfType<Microsoft.AspNetCore.Mvc.BadRequestObjectResult>();
+            // Assert: controller translates unexpected exceptions to 500 Internal Server Error (ProblemDetails)
+            actionResult.Result.Should().BeOfType<Microsoft.AspNetCore.Mvc.ObjectResult>();
+            var obj = actionResult.Result as Microsoft.AspNetCore.Mvc.ObjectResult;
+            obj!.StatusCode.Should().Be(500);
         }
 
         [Fact]
@@ -124,22 +121,17 @@ namespace New.AI.Chat.Tests.Controllers
 
             // Assert
             actionResult.Should().NotBeNull();
-            if (actionResult is Microsoft.AspNetCore.Mvc.OkObjectResult okObj2)
+            if (actionResult.Result is Microsoft.AspNetCore.Mvc.OkObjectResult okObj2)
             {
                 okObj2.Value.Should().BeEquivalentTo(expected);
             }
+            else if (actionResult.Value is GetUsersResponseDTO dto2)
+            {
+                dto2.Should().BeEquivalentTo(expected);
+            }
             else
             {
-                var type2 = actionResult.GetType();
-                if (type2.IsGenericType && type2.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.Ok") == true)
-                {
-                    var value = type2.GetProperty("Value")!.GetValue(actionResult);
-                    value.Should().BeEquivalentTo(expected);
-                }
-                else
-                {
-                    throw new Xunit.Sdk.XunitException($"Expected Ok result but got {type2.FullName}");
-                }
+                throw new Xunit.Sdk.XunitException($"Expected Ok result but got {actionResult.GetType().FullName}");
             }
         }
     }

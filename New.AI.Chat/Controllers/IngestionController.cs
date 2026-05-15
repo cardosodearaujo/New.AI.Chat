@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using New.AI.Chat.DTOs;
 using New.AI.Chat.Services.Interfaces;
 
@@ -21,7 +20,7 @@ namespace New.AI.Chat.Controllers
 
         [HttpPost]
         [DisableRequestSizeLimit]
-        public async Task<IActionResult> Ingestion([FromBody]IngestionDTO ingestion)
+        public async Task<ActionResult<IngestionResponseDTO>> Ingestion([FromBody]IngestionDTO ingestion)
         {
             return await Process(_ingestionService, ingestion);
         }

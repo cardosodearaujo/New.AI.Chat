@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using New.AI.Chat.DTOs;
-using New.AI.Chat.Services;
 using New.AI.Chat.Services.Interfaces;
 
 namespace New.AI.Chat.Controllers
@@ -20,7 +18,7 @@ namespace New.AI.Chat.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<GetAuthenticationLogsResponseDTO>> GetAll()
         {
             return await Process(_getAuthenticationLogsService, null);
         }

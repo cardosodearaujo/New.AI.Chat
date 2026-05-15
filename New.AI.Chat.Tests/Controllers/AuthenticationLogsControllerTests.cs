@@ -54,15 +54,23 @@ namespace New.AI.Chat.Tests.Controllers
 
             // Assert
             actionResult.Should().NotBeNull();
-            var type = actionResult.GetType();
-            if (type.IsGenericType && type.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.Ok") == true)
+            // Accept either OkObjectResult or Results.Ok<T>
+            if (actionResult is Microsoft.AspNetCore.Mvc.OkObjectResult okObj)
             {
-                var value = type.GetProperty("Value")!.GetValue(actionResult);
-                value.Should().BeEquivalentTo(expected);
+                okObj.Value.Should().BeEquivalentTo(expected);
             }
             else
             {
-                throw new Xunit.Sdk.XunitException($"Expected Ok result but got {type.FullName}");
+                var type = actionResult.GetType();
+                if (type.IsGenericType && type.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.Ok") == true)
+                {
+                    var value = type.GetProperty("Value")!.GetValue(actionResult);
+                    value.Should().BeEquivalentTo(expected);
+                }
+                else
+                {
+                    throw new Xunit.Sdk.XunitException($"Expected Ok result but got {type.FullName}");
+                }
             }
         }
 
@@ -85,10 +93,18 @@ namespace New.AI.Chat.Tests.Controllers
 
             // Assert
             actionResult.Should().NotBeNull();
-            var type2 = actionResult.GetType();
-            if (!(type2.IsGenericType && type2.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.BadRequest") == true))
+            // Accept either BadRequestObjectResult or Results.BadRequest<T>
+            if (actionResult is Microsoft.AspNetCore.Mvc.BadRequestObjectResult)
             {
-                throw new Xunit.Sdk.XunitException($"Expected BadRequest result but got {type2.FullName}");
+                // ok
+            }
+            else
+            {
+                var type2 = actionResult.GetType();
+                if (!(type2.IsGenericType && type2.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.BadRequest") == true))
+                {
+                    throw new Xunit.Sdk.XunitException($"Expected BadRequest result but got {type2.FullName}");
+                }
             }
         }
 
@@ -115,17 +131,27 @@ namespace New.AI.Chat.Tests.Controllers
 
             // Assert
             actionResult.Should().NotBeNull();
-            var type3 = actionResult.GetType();
-            if (type3.IsGenericType && type3.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.Ok") == true)
+            if (actionResult is Microsoft.AspNetCore.Mvc.OkObjectResult okObj2)
             {
-                var data = type3.GetProperty("Value")!.GetValue(actionResult) as GetAuthenticationLogsResponseDTO;
+                var data = okObj2.Value as GetAuthenticationLogsResponseDTO;
                 data.Should().NotBeNull();
                 data!.Logs.Should().BeEmpty();
                 data.TotalRecords.Should().Be(0);
             }
             else
             {
-                throw new Xunit.Sdk.XunitException($"Expected Ok result but got {type3.FullName}");
+                var type3 = actionResult.GetType();
+                if (type3.IsGenericType && type3.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.Ok") == true)
+                {
+                    var data = type3.GetProperty("Value")!.GetValue(actionResult) as GetAuthenticationLogsResponseDTO;
+                    data.Should().NotBeNull();
+                    data!.Logs.Should().BeEmpty();
+                    data.TotalRecords.Should().Be(0);
+                }
+                else
+                {
+                    throw new Xunit.Sdk.XunitException($"Expected Ok result but got {type3.FullName}");
+                }
             }
         }
 
@@ -172,17 +198,27 @@ namespace New.AI.Chat.Tests.Controllers
 
             // Assert
             var actionResult = await controller.GetAll();
-            var type4 = actionResult.GetType();
-            if (type4.IsGenericType && type4.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.Ok") == true)
+            if (actionResult is Microsoft.AspNetCore.Mvc.OkObjectResult okObj3)
             {
-                var data = type4.GetProperty("Value")!.GetValue(actionResult) as GetAuthenticationLogsResponseDTO;
+                var data = okObj3.Value as GetAuthenticationLogsResponseDTO;
                 data.Should().NotBeNull();
                 data!.Logs[0].IsSuccessful.Should().BeTrue();
                 data.Logs[1].IsSuccessful.Should().BeFalse();
             }
             else
             {
-                throw new Xunit.Sdk.XunitException($"Expected Ok result but got {type4.FullName}");
+                var type4 = actionResult.GetType();
+                if (type4.IsGenericType && type4.GetGenericTypeDefinition().FullName?.Contains("Microsoft.AspNetCore.Http.HttpResults.Ok") == true)
+                {
+                    var data = type4.GetProperty("Value")!.GetValue(actionResult) as GetAuthenticationLogsResponseDTO;
+                    data.Should().NotBeNull();
+                    data!.Logs[0].IsSuccessful.Should().BeTrue();
+                    data.Logs[1].IsSuccessful.Should().BeFalse();
+                }
+                else
+                {
+                    throw new Xunit.Sdk.XunitException($"Expected Ok result but got {type4.FullName}");
+                }
             }
         }
     }

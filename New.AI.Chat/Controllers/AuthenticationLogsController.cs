@@ -20,7 +20,7 @@ namespace New.AI.Chat.Controllers
         }
 
         [HttpGet]
-        public async Task<Results<Ok<GetAuthenticationLogsResponseDTO>, BadRequest<IList<string>>>> GetAll()
+        public async Task<IActionResult> GetAll()
         {
             return await Process(_getAuthenticationLogsService, null);
         }

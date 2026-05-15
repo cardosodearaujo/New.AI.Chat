@@ -93,7 +93,7 @@ namespace New.AI.Chat.Tests.Integration
             var client = _factory.CreateClient();
 
             // Login
-            var login = new LoginDTO { Username = "admin", Password = "P@ssw0rd" };
+            var login = new LoginDTO { Username = "admin", Password = "Abc@123" };
             var resp = await client.PostAsync("/api/auth/login", new StringContent(JsonSerializer.Serialize(login), Encoding.UTF8, "application/json"));
             resp.EnsureSuccessStatusCode();
 

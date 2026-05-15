@@ -21,7 +21,7 @@ namespace New.AI.Chat.Controllers
 
         [HttpPost]
         [DisableRequestSizeLimit]
-        public async Task<Results<Ok<IngestionResponseDTO>, BadRequest<IList<string>>>> Ingestion([FromBody]IngestionDTO ingestion)
+        public async Task<IActionResult> Ingestion([FromBody]IngestionDTO ingestion)
         {
             return await Process(_ingestionService, ingestion);
         }

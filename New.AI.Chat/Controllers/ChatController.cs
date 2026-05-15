@@ -19,7 +19,7 @@ namespace New.AI.Chat.Controllers
         }
 
         [HttpPost]
-        public async Task<Results<Ok<PromptResponseDTO>, BadRequest<IList<string>>>> SendMessage(PromptDTO message)
+        public async Task<IActionResult> SendMessage(PromptDTO message)
         {
             return await Process(_chatService, message);
         }

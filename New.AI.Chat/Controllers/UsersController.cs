@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using New.AI.Chat.DTOs;
 using New.AI.Chat.Services.Interfaces;
@@ -36,37 +35,37 @@ namespace New.AI.Chat.Controllers
         }
 
         [HttpGet]
-        public async Task<Results<Ok<GetUsersResponseDTO>, BadRequest<IList<string>>>> GetAll()
+        public async Task<IActionResult> GetAll()
         {
             return await Process(_getUsersService, null);
         }
 
         [HttpGet("{id}")]
-        public async Task<Results<Ok<UserResponseDTO>, BadRequest<IList<string>>>> Get(Guid id)
+        public async Task<IActionResult> Get(Guid id)
         {
             return await Process(_getUserByIdService, id);
         }
 
         [HttpPost]
-        public async Task<Results<Ok<UserResponseDTO>, BadRequest<IList<string>>>> Create([FromBody] CreateUserDTO dto)
+        public async Task<IActionResult> Create([FromBody] CreateUserDTO dto)
         {
             return await Process(_createUserService, dto);
         }
 
         [HttpPut("{id}")]
-        public async Task<Results<Ok<bool>, BadRequest<IList<string>>>> Update(Guid id, [FromBody] UpdateUserDTO dto)
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserDTO dto)
         {
             return await Process(_updateUserService, (id, dto));
         }
 
         [HttpDelete("{id}")]
-        public async Task<Results<Ok<bool>, BadRequest<IList<string>>>> Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
             return await Process(_deleteUserService, id);
         }
 
         [HttpPost("{id}/change-password")]
-        public async Task<Results<Ok<bool>, BadRequest<IList<string>>>> ChangePassword(Guid id, [FromBody] ChangePasswordDTO dto)
+        public async Task<IActionResult> ChangePassword(Guid id, [FromBody] ChangePasswordDTO dto)
         {
             return await Process(_changeUserPasswordService, (id, dto));
         }

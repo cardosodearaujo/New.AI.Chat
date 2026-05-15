@@ -16,7 +16,7 @@ namespace New.AI.Chat.Controllers
         }
 
         [HttpGet("exists")]
-        public async Task<Results<Ok<bool>, BadRequest<IList<string>>>> Exists([FromQuery] FileQueryDTO file)
+        public async Task<IActionResult> Exists([FromQuery] FileQueryDTO file)
         {
             return await Process(_fileService, file);
         }

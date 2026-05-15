@@ -23,22 +23,22 @@ namespace New.AI.Chat.Controllers
 
                     if (!service.HasErrors())
                     {
-                        _logger.Log(LogLevel.Information, $"Saida 200 (OK): {service.Data}");
+                        _logger.Log(LogLevel.Information, $"Saída 200 (OK): {service.Data}");
                         return TypedResults.Ok(service.Data);
                     }
                     else if (service.HasErrors())
                     {
-                        _logger.Log(LogLevel.Information, $"Saida 400 (BadRequest): {service.Data}");
+                        _logger.Log(LogLevel.Information, $"Saída 400 (BadRequest): {service.Data}");
                         return TypedResults.BadRequest(service.Messages);
                     }
                 }
 
-                _logger.Log(LogLevel.Information, $"Saida 400 (BadRequest): {service.Data}");
+                _logger.Log(LogLevel.Information, $"Saída 400 (BadRequest): {service.Data}");
                 return TypedResults.BadRequest((IList<string>)new List<string> { "Retorno inválido!" });
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Saida 400 (BadRequest): Ocorreu um erro inesperado: {ex.Message}");
+                _logger.LogError($"Saída 400 (BadRequest): Ocorreu um erro inesperado: {ex.Message}");
                 return TypedResults.BadRequest((IList<string>)new List<string> { "Ocorreu um erro ao processar a solicitação. Consulte os logs." });
             }
         }

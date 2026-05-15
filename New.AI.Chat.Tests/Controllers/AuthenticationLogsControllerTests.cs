@@ -46,7 +46,7 @@ namespace New.AI.Chat.Tests.Controllers
             mockService.SetupGet(s => s.Data).Returns(expected);
             mockService.Setup(s => s.HasErrors()).Returns(false);
 
-            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController<object, GetAuthenticationLogsResponseDTO>>>();
+            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
 
             // Act
@@ -70,7 +70,7 @@ namespace New.AI.Chat.Tests.Controllers
             mockService.Setup(s => s.HasErrors()).Returns(true);
             mockService.Setup(s => s.Messages).Returns(errors);
 
-            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController<object, GetAuthenticationLogsResponseDTO>>>();
+            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
 
             // Act
@@ -96,7 +96,7 @@ namespace New.AI.Chat.Tests.Controllers
             mockService.SetupGet(s => s.Data).Returns(expected);
             mockService.Setup(s => s.HasErrors()).Returns(false);
 
-            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController<object, GetAuthenticationLogsResponseDTO>>>();
+            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
 
             // Act
@@ -147,7 +147,7 @@ namespace New.AI.Chat.Tests.Controllers
             mockService.SetupGet(s => s.Data).Returns(expected);
             mockService.Setup(s => s.HasErrors()).Returns(false);
 
-            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController<object, GetAuthenticationLogsResponseDTO>>>();
+            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
 
             // Act

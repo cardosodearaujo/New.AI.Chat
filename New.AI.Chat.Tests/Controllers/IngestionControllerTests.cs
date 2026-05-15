@@ -38,7 +38,7 @@ namespace New.AI.Chat.Tests.Controllers
             mockService.Setup(s => s.HasErrors()).Returns(true);
             mockService.Setup(s => s.Messages).Returns(new List<string> { "error" });
 
-            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController<IngestionDTO, IngestionResponseDTO>>>();
+            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new IngestionController(logger.Object, mockService.Object);
 
             var result = await controller.Ingestion(new IngestionDTO { IngestionFiles = new List<IngestionFileDTO>() });

@@ -37,7 +37,7 @@ namespace New.AI.Chat.Tests.Controllers
             mockService.Setup(s => s.HasErrors()).Returns(true);
             mockService.Setup(s => s.Messages).Returns(new List<string> { "error" });
 
-            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController<FileQueryDTO, bool>>>();
+            var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new FileController(logger.Object, mockService.Object);
 
             var result = await controller.Exists(new FileQueryDTO { FileName = "x" });

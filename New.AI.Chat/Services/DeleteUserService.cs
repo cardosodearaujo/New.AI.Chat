@@ -13,11 +13,13 @@ namespace New.AI.Chat.Services
             _dbContext = dbContext;
         }
 
-        protected override Task Validate(Guid entry) => Task.CompletedTask;
+        protected override Task Validate(Guid entry, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        protected override async Task DoProcess(Guid id)
+        private bool _result;
+
+        protected override async Task DoProcess(Guid id, CancellationToken cancellationToken)
         {
-            var user = await _dbContext.DbSetUsers.FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _dbContext.DbSetUsers.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
             if (user == null)
             {
                 AddError($"Usuário com ID {id} não encontrado.");
@@ -25,9 +27,11 @@ namespace New.AI.Chat.Services
             }
 
             _dbContext.DbSetUsers.Remove(user);
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync(cancellationToken);
 
-            Data = true;
+            _result = true;
         }
+
+        protected override Task<bool> GetResultData(Guid entry, CancellationToken cancellationToken) => Task.FromResult(_result);
     }
 }

@@ -1,41 +1,45 @@
 ﻿using New.AI.Chat.Services.Interfaces;
+using New.AI.Chat.Shared;
 
 namespace New.AI.Chat.Services
 {
-    public abstract class DefaultService<E,S> : IDefaultService<E, S>
+    public abstract class DefaultService<E, S> : IDefaultService<E, S>
     {
         public DefaultService()
         {
-            Messages = new List<string>();
-            Data = default;
+            _messages = new List<string>();
+            Result = default;
         }
 
-        public IList<string> Messages { get; }
+        private List<string> _messages;
 
-        public S Data { get; set; }
+        protected void AddError(string message) => _messages.Add(message);
 
-        public void AddError(string message)
+        protected bool HasErrors() => _messages.Any();
+
+        public Result<S> Result { get; private set; }
+
+        protected abstract Task Validate(E entry, CancellationToken cancellationToken);
+
+        public async Task Process(E entry, CancellationToken cancellationToken = default)
         {
-            Messages.Add(message);
-        }
+            cancellationToken.ThrowIfCancellationRequested();
 
-        public bool HasErrors()
-        {
-            return Messages.Any();
-        }
-
-        protected abstract Task Validate(E entry);
-
-        public async Task Process(E entry)
-        {
-            await Validate(entry);
+            await Validate(entry, cancellationToken);
 
             if (!HasErrors())
+            {               
+                await DoProcess(entry, cancellationToken);
+                Result = Result<S>.Success(await GetResultData(entry, cancellationToken));
+            }
+            else
             {
-                await DoProcess(entry);
+                Result = Result<S>.Failure(_messages);
             }
         }
 
-        protected abstract Task DoProcess(E entry);
+        protected abstract Task DoProcess(E entry, CancellationToken cancellationToken);
+
+        protected virtual Task<S?> GetResultData(E entry, CancellationToken cancellationToken) => Task.FromResult(default(S));
     }
 }

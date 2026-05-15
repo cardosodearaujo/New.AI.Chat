@@ -30,7 +30,7 @@ namespace New.AI.Chat.Services
             _kernel = kernel;
         }
 
-        protected override async Task Validate(IngestionDTO ingestionFile)
+        protected override async Task Validate(IngestionDTO ingestionFile, CancellationToken cancellationToken)
         {
             if (ingestionFile?.IngestionFiles == null || !ingestionFile.IngestionFiles.Any())
             {
@@ -74,21 +74,22 @@ namespace New.AI.Chat.Services
             }
         }
 
-        protected override async Task DoProcess(IngestionDTO ingestionFile)
+        protected override async Task DoProcess(IngestionDTO ingestionFile, CancellationToken cancellationToken)
         {
             int interador = 0;
 
             var generatorVectors = _kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
 
-            foreach (var file in ingestionFile.IngestionFiles)
+                foreach (var file in ingestionFile.IngestionFiles)
             {
                 try
                 {
+                        cancellationToken.ThrowIfCancellationRequested();
                     interador++;
 
                     _logger.LogInformation($"{DateNow} - Arquivo {file.FileName}: {interador} de {ingestionFile.IngestionFiles.Count()}");
 
-                    var fileExists = await _aiDbContext.DbSetKDInformation.AnyAsync(f => f.FileName == file.FileName);
+                        var fileExists = await _aiDbContext.DbSetKDInformation.AnyAsync(f => f.FileName == file.FileName, cancellationToken);
 
                     if (!fileExists)
                     {
@@ -107,8 +108,8 @@ namespace New.AI.Chat.Services
                             LowGranularityList = await GetLowGranularity(generatorVectors, originalFile)
                         };
 
-                        await _aiDbContext.DbSetKDInformation.AddAsync(kDInformation);
-                        await _aiDbContext.SaveChangesAsync();
+                        await _aiDbContext.DbSetKDInformation.AddAsync(kDInformation, cancellationToken);
+                        await _aiDbContext.SaveChangesAsync(cancellationToken);
 
                         _logger.LogInformation($"{DateNow} - Arquivo {file.FileName}: Inserido com sucesso.");
                     }

@@ -24,10 +24,11 @@ namespace New.AI.Chat.Controllers
         {
             await _authService.Process(login);
 
-            if (_authService.HasErrors())
-                return Unauthorized(_authService.Messages);
+            var r = _authService.Result;
+            if (r == null || !r.IsSuccess)
+                return Unauthorized(r?.Errors);
 
-            return Ok(_authService.Data);
+            return Ok(r.Data);
         }
     }
 }

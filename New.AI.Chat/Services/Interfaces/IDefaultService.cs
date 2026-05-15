@@ -1,15 +1,12 @@
-﻿namespace New.AI.Chat.Services.Interfaces
+﻿using System.Threading;
+using New.AI.Chat.Shared;
+
+namespace New.AI.Chat.Services.Interfaces
 {
     public interface IDefaultService<E, S>
     {
-        public IList<string> Messages { get; }
+        public Result<S> Result { get; }
 
-        public S Data { get; }
-
-        Task Process(E entry);
-
-        void AddError(string message);
-
-        bool HasErrors();
+        Task Process(E entry, CancellationToken cancellationToken = default);
     }
 }

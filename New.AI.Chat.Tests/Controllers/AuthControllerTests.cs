@@ -17,9 +17,8 @@ namespace New.AI.Chat.Tests.Controllers
             var mockService = new Mock<IAuthService>();
             var expected = new AuthResponseDTO { Token = "abc", ExpiresAt = DateTime.UtcNow.AddMinutes(60) };
 
-            mockService.Setup(s => s.Process(It.IsAny<LoginDTO>())).Returns(Task.CompletedTask);
-            mockService.SetupGet(s => s.Data).Returns(expected);
-            mockService.Setup(s => s.HasErrors()).Returns(false);
+            mockService.Setup(s => s.Process(It.IsAny<LoginDTO>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<AuthResponseDTO>.Success(expected));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<AuthController>>();
             var controller = new AuthController(logger.Object, mockService.Object);
@@ -39,10 +38,9 @@ namespace New.AI.Chat.Tests.Controllers
             // Arrange
             var mockService = new Mock<IAuthService>();
 
-            mockService.Setup(s => s.Process(It.IsAny<LoginDTO>())).Returns(Task.CompletedTask);
-            mockService.Setup(s => s.HasErrors()).Returns(true);
-            var messages = new List<string> { "Credenciais inválidas." };
-            mockService.Setup(s => s.Messages).Returns(messages);
+            mockService.Setup(s => s.Process(It.IsAny<LoginDTO>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            var messages = new[] { "Credenciais inválidas." };
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<AuthResponseDTO>.Failure(messages));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<AuthController>>();
             var controller = new AuthController(logger.Object, mockService.Object);

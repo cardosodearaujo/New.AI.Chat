@@ -16,17 +16,16 @@ namespace New.AI.Chat.Tests.Controllers
             var mockService = new Mock<IIngestionService>();
             var response = new IngestionResponseDTO();
 
-            mockService.Setup(s => s.Process(It.IsAny<IngestionDTO>())).Returns(Task.CompletedTask);
-            mockService.Setup(s => s.HasErrors()).Returns(false);
-            mockService.Setup(s => s.Data).Returns(response);
+            mockService.Setup(s => s.Process(It.IsAny<IngestionDTO>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<IngestionResponseDTO>.Success(response));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<IngestionController>>();
             var controller = new IngestionController(logger.Object, mockService.Object);
 
             var result = await controller.Ingestion(new IngestionDTO { IngestionFiles = new List<IngestionFileDTO>() });
 
-            mockService.Verify(s => s.Process(It.IsAny<IngestionDTO>()), Times.Once);
-            mockService.Object.Data.Should().BeEquivalentTo(response);
+            mockService.Verify(s => s.Process(It.IsAny<IngestionDTO>(), It.IsAny<System.Threading.CancellationToken>()), Times.Once);
+            mockService.Object.Result.Data.Should().BeEquivalentTo(response);
         }
 
         [Fact]
@@ -34,17 +33,16 @@ namespace New.AI.Chat.Tests.Controllers
         {
             var mockService = new Mock<IIngestionService>();
 
-            mockService.Setup(s => s.Process(It.IsAny<IngestionDTO>())).Returns(Task.CompletedTask);
-            mockService.Setup(s => s.HasErrors()).Returns(true);
-            mockService.Setup(s => s.Messages).Returns(new List<string> { "error" });
+            mockService.Setup(s => s.Process(It.IsAny<IngestionDTO>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<IngestionResponseDTO>.Failure(new List<string> { "error" }));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new IngestionController(logger.Object, mockService.Object);
 
             var result = await controller.Ingestion(new IngestionDTO { IngestionFiles = new List<IngestionFileDTO>() });
 
-            mockService.Verify(s => s.Process(It.IsAny<IngestionDTO>()), Times.Once);
-            mockService.Object.HasErrors().Should().BeTrue();
+            mockService.Verify(s => s.Process(It.IsAny<IngestionDTO>(), It.IsAny<System.Threading.CancellationToken>()), Times.Once);
+            mockService.Object.Result.IsSuccess.Should().BeFalse();
         }
     }
 }

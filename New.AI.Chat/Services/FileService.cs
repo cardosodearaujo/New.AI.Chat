@@ -12,10 +12,9 @@ namespace New.AI.Chat.Services
         public FileService(AIDbContext aiDbContext)
         {
             _aiDbContext = aiDbContext;
-            Data = false;
         }
 
-        protected override async Task Validate(FileQueryDTO entry)
+        protected override async Task Validate(FileQueryDTO entry, CancellationToken cancellationToken)
         {
             if (entry == null)
             {
@@ -29,9 +28,13 @@ namespace New.AI.Chat.Services
             }
         }
 
-        protected override async Task DoProcess(FileQueryDTO entry)
+        private bool _result;
+
+        protected override async Task DoProcess(FileQueryDTO entry, CancellationToken cancellationToken)
         {
-            Data = await _aiDbContext.DbSetKDInformation.AnyAsync(f => f.FileName == entry.FileName);
+            _result = await _aiDbContext.DbSetKDInformation.AnyAsync(f => f.FileName == entry.FileName, cancellationToken);
         }
+
+        protected override Task<bool> GetResultData(FileQueryDTO entry, CancellationToken cancellationToken) => Task.FromResult(_result);
     }
 }

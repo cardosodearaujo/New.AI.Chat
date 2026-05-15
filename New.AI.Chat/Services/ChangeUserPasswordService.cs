@@ -16,12 +16,14 @@ namespace New.AI.Chat.Services
             _passwordHashService = passwordHashService;
         }
 
-        protected override Task Validate((Guid id, ChangePasswordDTO dto) entry) => Task.CompletedTask;
+        protected override Task Validate((Guid id, ChangePasswordDTO dto) entry, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        protected override async Task DoProcess((Guid id, ChangePasswordDTO dto) payload)
+        private bool _result;
+
+        protected override async Task DoProcess((Guid id, ChangePasswordDTO dto) payload, CancellationToken cancellationToken)
         {
             var (id, dto) = payload;
-            var user = await _dbContext.DbSetUsers.FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _dbContext.DbSetUsers.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
             if (user == null)
             {
                 AddError($"Usuário com ID {id} não encontrado.");
@@ -38,9 +40,11 @@ namespace New.AI.Chat.Services
             user.UpdatedAt = DateTime.UtcNow;
 
             _dbContext.DbSetUsers.Update(user);
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync(cancellationToken);
 
-            Data = true;
+            _result = true;
         }
+
+        protected override Task<bool> GetResultData((Guid id, ChangePasswordDTO dto) entry, CancellationToken cancellationToken) => Task.FromResult(_result);
     }
 }

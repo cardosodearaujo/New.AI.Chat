@@ -28,18 +28,42 @@ namespace New.AI.Chat.Controllers
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                await service.Process(entry);
+                await service.Process(entry, cancellationToken);
 
-                if (!service.HasErrors())
+                // Prefer explicit Result<T> when available
+                var result = service.Result;
+                if (result != null)
                 {
-                    _logger.LogInformation("[{CorrelationId}] Saída 200 (OK): {Type}", correlationId, typeof(S).Name);
-                    return Ok(service.Data);
+                    if (result.IsSuccess)
+                    {
+                        _logger.LogInformation("[{CorrelationId}] Saída 200 (OK): {Type}", correlationId, typeof(S).Name);
+                        return Ok(result.Data);
+                    }
+
+                    if (result.IsNotFound)
+                    {
+                        _logger.LogInformation("[{CorrelationId}] Saída 404 (NotFound): {Type}", correlationId, typeof(S).Name);
+                        var notFoundPd = new ProblemDetails { Title = "Não encontrado" };
+                        notFoundPd.Extensions["messages"] = result.Errors ?? Enumerable.Empty<string>();
+                        return NotFound(notFoundPd);
+                    }
+
+                    _logger.LogInformation("[{CorrelationId}] Saída 400 (BadRequest) - service returned Result failures", correlationId);
+                    var validation = new ValidationProblemDetails { Title = "Erros de validação" };
+                    validation.Extensions["messages"] = result.Errors ?? Enumerable.Empty<string>();
+                    return BadRequest(validation);
                 }
 
-                _logger.LogInformation("[{CorrelationId}] Saída 400 (BadRequest) - service returned messages", correlationId);
-                var validation = new ValidationProblemDetails { Title = "Erros de validação" };
-                validation.Extensions["messages"] = service.Messages;
-                return BadRequest(validation);
+                // If Result is null, treat as internal server error (service should always set Result)
+                _logger.LogError("[{CorrelationId}] Service did not set a Result; returning 500", correlationId);
+                var pd = new ProblemDetails
+                {
+                    Title = "Ocorreu um erro ao processar a solicitação.",
+                    Status = StatusCodes.Status500InternalServerError,
+                    Detail = "Serviço não forneceu resultado após processamento."
+                };
+                pd.Extensions["correlationId"] = correlationId;
+                return StatusCode(StatusCodes.Status500InternalServerError, pd);
             }
             catch (OperationCanceledException)
             {

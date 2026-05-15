@@ -38,8 +38,8 @@ namespace New.AI.Chat.Tests.Controllers
 
             var expected = new GetUsersResponseDTO { Users = users };
 
-            mockService.Setup(s => s.Process(null)).Returns(Task.CompletedTask);
-            mockService.SetupGet(s => s.Data).Returns(expected);
+            mockService.Setup(s => s.Process(null, It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<GetUsersResponseDTO>.Success(expected));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<New.AI.Chat.Controllers.UsersController>>();
             var controller = new UsersController(
@@ -75,7 +75,7 @@ namespace New.AI.Chat.Tests.Controllers
         {
             // Arrange
             var mockService = new Mock<New.AI.Chat.Services.Interfaces.IGetUsersService>();
-            mockService.Setup(s => s.Process(null)).Throws(new InvalidOperationException("Erro ao buscar usuários"));
+            mockService.Setup(s => s.Process(null, It.IsAny<System.Threading.CancellationToken>())).Throws(new InvalidOperationException("Erro ao buscar usuários"));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<New.AI.Chat.Controllers.UsersController>>();
             var controller = new UsersController(
@@ -103,8 +103,8 @@ namespace New.AI.Chat.Tests.Controllers
             var mockService = new Mock<New.AI.Chat.Services.Interfaces.IGetUsersService>();
             var expected = new GetUsersResponseDTO { Users = new List<UserResponseDTO>() };
 
-            mockService.Setup(s => s.Process(null)).Returns(Task.CompletedTask);
-            mockService.SetupGet(s => s.Data).Returns(expected);
+            mockService.Setup(s => s.Process(null, It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<GetUsersResponseDTO>.Success(expected));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<New.AI.Chat.Controllers.UsersController>>();
             var controller = new UsersController(

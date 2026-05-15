@@ -9,6 +9,7 @@ namespace New.AI.Chat.Tests.Controllers
 {
     public class AuthenticationLogsControllerTests
     {
+        // Tests for AuthenticationLogsController
         [Fact]
         public async Task GetAll_WithValidLogs_ReturnsOkWithLogsList()
         {
@@ -42,9 +43,8 @@ namespace New.AI.Chat.Tests.Controllers
                 TotalRecords = logs.Count
             };
 
-            mockService.Setup(s => s.Process(It.IsAny<object>())).Returns(Task.CompletedTask);
-            mockService.SetupGet(s => s.Data).Returns(expected);
-            mockService.Setup(s => s.HasErrors()).Returns(false);
+            mockService.Setup(s => s.Process(It.IsAny<object>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<GetAuthenticationLogsResponseDTO>.Success(expected));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
@@ -76,9 +76,8 @@ namespace New.AI.Chat.Tests.Controllers
             var mockService = new Mock<IGetAuthenticationLogsService>();
             var errors = new List<string> { "Erro ao buscar logs de autenticação" };
 
-            mockService.Setup(s => s.Process(It.IsAny<object>())).Returns(Task.CompletedTask);
-            mockService.Setup(s => s.HasErrors()).Returns(true);
-            mockService.Setup(s => s.Messages).Returns(errors);
+            mockService.Setup(s => s.Process(It.IsAny<object>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<GetAuthenticationLogsResponseDTO>.Failure(errors));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
@@ -114,9 +113,8 @@ namespace New.AI.Chat.Tests.Controllers
                 TotalRecords = 0
             };
 
-            mockService.Setup(s => s.Process(It.IsAny<object>())).Returns(Task.CompletedTask);
-            mockService.SetupGet(s => s.Data).Returns(expected);
-            mockService.Setup(s => s.HasErrors()).Returns(false);
+            mockService.Setup(s => s.Process(It.IsAny<object>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<GetAuthenticationLogsResponseDTO>.Success(expected));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
@@ -176,15 +174,14 @@ namespace New.AI.Chat.Tests.Controllers
                 TotalRecords = 2
             };
 
-            mockService.Setup(s => s.Process(It.IsAny<object>())).Returns(Task.CompletedTask);
-            mockService.SetupGet(s => s.Data).Returns(expected);
-            mockService.Setup(s => s.HasErrors()).Returns(false);
+            mockService.Setup(s => s.Process(It.IsAny<object>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+            mockService.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<GetAuthenticationLogsResponseDTO>.Success(expected));
 
             var logger = new Mock<Microsoft.Extensions.Logging.ILogger<DefaultController>>();
             var controller = new AuthenticationLogsController(logger.Object, mockService.Object);
 
             // Act
-            var result = await controller.GetAll();
+            // Act
 
             // Assert
             var actionResult = await controller.GetAll();

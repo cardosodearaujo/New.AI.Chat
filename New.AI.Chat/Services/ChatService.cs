@@ -14,6 +14,7 @@ namespace New.AI.Chat.Services
 {
     public class ChatService : DefaultService<PromptDTO, PromptResponseDTO>, IChatService
     {
+        private PromptResponseDTO? _result;
         private readonly AIDbContext _aiDbContext;
         private readonly IEmbeddingGenerator<string, Embedding<float>> _vectorGenerator;
         private readonly ILLMStrategyFactoryService _LLMStrategyFactory;
@@ -33,7 +34,7 @@ namespace New.AI.Chat.Services
             _vectorGenerator = kernel.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
         }
 
-        protected override async Task Validate(PromptDTO prompt)
+        protected override async Task Validate(PromptDTO prompt, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(prompt?.Message))
             {
@@ -53,8 +54,9 @@ namespace New.AI.Chat.Services
             }
         }
 
-        protected override async Task DoProcess(PromptDTO prompt)
+        protected override async Task DoProcess(PromptDTO prompt, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             //Passo 1: Incorpora o prompt:
             var promptEmbedding = await _vectorGenerator.GenerateAsync([prompt.Message]);
 
@@ -67,9 +69,9 @@ namespace New.AI.Chat.Services
                 var llm = _LLMStrategyFactory.GetStrategy(prompt.LLM.Value);
 
                 //Passo 3: Dispara as buscas de forma paralela:
-                var lowGranularitySemanticIDs =  await GetLowGranularitySemanticIDs(promptVector, llm.Parameters);
-                var lowGranularityWithHighGranularitySemanticIDs = await GetLowGranularityWithHighGranularitySemanticIDs(promptVector, llm.Parameters);
-                var lowGranularityWithHighGranularityLexicalIDs = await GetLowGranularityWithHighGranularityLexicalIDs(prompt.Message,llm.Parameters);
+                var lowGranularitySemanticIDs =  await GetLowGranularitySemanticIDs(promptVector, llm.Parameters, cancellationToken);
+                var lowGranularityWithHighGranularitySemanticIDs = await GetLowGranularityWithHighGranularitySemanticIDs(promptVector, llm.Parameters, cancellationToken);
+                var lowGranularityWithHighGranularityLexicalIDs = await GetLowGranularityWithHighGranularityLexicalIDs(prompt.Message,llm.Parameters, cancellationToken);
                 
                 //Passo 4: unifica os IDs:
                 var lowGranularityIDs = new HashSet<Guid>();
@@ -82,7 +84,7 @@ namespace New.AI.Chat.Services
                                                       .AsNoTracking()
                                                       .Include(p => p.KnowledgeDocumentInformation)
                                                       .Where(p => lowGranularityIDs.Contains(p.Id))
-                                                      .ToListAsync();
+                                                      .ToListAsync(cancellationToken);
 
                 //Passo 6: Caso tenha dados constroi o contexto do prompt:
                 if (referenceData.Any())
@@ -106,7 +108,7 @@ namespace New.AI.Chat.Services
                     //Passo 8: Envia a resposta para o usuário:
                     if (response != null)
                     {
-                        Data = new PromptResponseDTO
+                        _result = new PromptResponseDTO
                         {
                             Response = response,
                             ReferenceFiles = referenceFiles.ToList(),
@@ -125,25 +127,25 @@ namespace New.AI.Chat.Services
             }
         }
 
-        private async Task<List<Guid>> GetLowGranularitySemanticIDs(Pgvector.Vector promptVector, LLMParametersDTO llmParameters)
+        private async Task<List<Guid>> GetLowGranularitySemanticIDs(Pgvector.Vector promptVector, LLMParametersDTO llmParameters, CancellationToken cancellationToken)
         {
             return await _aiDbContext.DbSetKDLowGranularity
                                      .OrderBy(p => p.Embedding.L2Distance(promptVector))
                                      .Take(llmParameters.TakeLowGranularitySemanticIDs)
                                      .Select(p => p.Id)
-                                     .ToListAsync();
+                                     .ToListAsync(cancellationToken);
         }
 
-        private async Task<List<Guid>> GetLowGranularityWithHighGranularitySemanticIDs(Pgvector.Vector promptVector, LLMParametersDTO llmParameters)
+        private async Task<List<Guid>> GetLowGranularityWithHighGranularitySemanticIDs(Pgvector.Vector promptVector, LLMParametersDTO llmParameters, CancellationToken cancellationToken)
         {
             return await _aiDbContext.DbSetKDHighGranularity
                                      .OrderBy(c => c.Embedding.L2Distance(promptVector))
                                      .Take(llmParameters.TakeLowGranularityWithHighGranularitySemanticIDs)
                                      .Select(c => c.LowGranularityId)
-                                     .ToListAsync();
+                                     .ToListAsync(cancellationToken);
         }
 
-        private async Task<List<Guid>> GetLowGranularityWithHighGranularityLexicalIDs(string message, LLMParametersDTO llmParameters)
+        private async Task<List<Guid>> GetLowGranularityWithHighGranularityLexicalIDs(string message, LLMParametersDTO llmParameters, CancellationToken cancellationToken)
         {
             var technicalTerms = await ExtractTechnicalTerms(message);
             var allHighGranularityLexicalIDs = new List<Guid>();
@@ -156,7 +158,7 @@ namespace New.AI.Chat.Services
                                                                       .Where(c => EF.Functions.ILike(c.ContentText, $"%{terms}%"))
                                                                       .Take(llmParameters.TakeLowGranularityWithHighGranularityLexicalIDs)
                                                                       .Select(c => c.LowGranularityId)
-                                                                      .ToListAsync();
+                                                                      .ToListAsync(cancellationToken);
 
                     allHighGranularityLexicalIDs.AddRange(highGranularityLexicalIDs);
                 }
@@ -182,7 +184,7 @@ namespace New.AI.Chat.Services
 
                     if (extractTerms != null)
                     {
-                        foreach (var T in extractTerms.Where(X => !string.IsNullOrWhiteSpace(X))) terms.Add(T.Trim());
+                        foreach (var t in extractTerms.Where(x => !string.IsNullOrWhiteSpace(x))) terms.Add(t.Trim());
                         _logger.LogInformation("Termos extraídos pela IA: {Termos}", string.Join(", ", terms));
                     }
                 }
@@ -194,5 +196,7 @@ namespace New.AI.Chat.Services
 
             return terms.ToList();
         }
+
+        protected override Task<PromptResponseDTO?> GetResultData(PromptDTO entry, CancellationToken cancellationToken) => Task.FromResult(_result);
     }
 }

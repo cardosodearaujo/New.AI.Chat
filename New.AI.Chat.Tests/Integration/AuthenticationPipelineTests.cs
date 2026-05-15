@@ -45,21 +45,18 @@ namespace New.AI.Chat.Tests.Integration
 
                     // Replace heavy dependencies with lightweight mocks to avoid 500s in integration tests
                     var mockChat = new Mock<New.AI.Chat.Services.Interfaces.IChatService>();
-                    mockChat.Setup(s => s.Process(It.IsAny<New.AI.Chat.DTOs.PromptDTO>())).Returns(Task.CompletedTask);
-                    mockChat.Setup(s => s.HasErrors()).Returns(false);
-                    mockChat.SetupGet(s => s.Data).Returns(new New.AI.Chat.DTOs.PromptResponseDTO { Response = "ok", DateTime = DateTime.UtcNow.ToString() });
+                    mockChat.Setup(s => s.Process(It.IsAny<New.AI.Chat.DTOs.PromptDTO>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+                    mockChat.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<New.AI.Chat.DTOs.PromptResponseDTO>.Success(new New.AI.Chat.DTOs.PromptResponseDTO { Response = "ok", DateTime = DateTime.UtcNow.ToString() }));
                     services.AddSingleton(mockChat.Object);
 
                     var mockIngestion = new Mock<New.AI.Chat.Services.Interfaces.IIngestionService>();
-                    mockIngestion.Setup(s => s.Process(It.IsAny<New.AI.Chat.DTOs.IngestionDTO>())).Returns(Task.CompletedTask);
-                    mockIngestion.Setup(s => s.HasErrors()).Returns(false);
-                    mockIngestion.SetupGet(s => s.Data).Returns(new New.AI.Chat.DTOs.IngestionResponseDTO());
+                    mockIngestion.Setup(s => s.Process(It.IsAny<New.AI.Chat.DTOs.IngestionDTO>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+                    mockIngestion.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<New.AI.Chat.DTOs.IngestionResponseDTO>.Success(new New.AI.Chat.DTOs.IngestionResponseDTO()));
                     services.AddSingleton(mockIngestion.Object);
 
                     var mockFile = new Mock<New.AI.Chat.Services.Interfaces.IFileService>();
-                    mockFile.Setup(s => s.Process(It.IsAny<New.AI.Chat.DTOs.FileQueryDTO>())).Returns(Task.CompletedTask);
-                    mockFile.Setup(s => s.HasErrors()).Returns(false);
-                    mockFile.SetupGet(s => s.Data).Returns(true);
+                    mockFile.Setup(s => s.Process(It.IsAny<New.AI.Chat.DTOs.FileQueryDTO>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask);
+                    mockFile.SetupGet(s => s.Result).Returns(New.AI.Chat.Shared.Result<bool>.Success(true));
                     services.AddSingleton(mockFile.Object);
 
                     // Add a test authentication scheme to avoid JWT validation complexity in tests

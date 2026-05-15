@@ -17,7 +17,7 @@ namespace New.AI.Chat.Services
             _passwordHashService = passwordHashService;
         }
 
-        protected override Task Validate(CreateUserDTO entry)
+        protected override Task Validate(CreateUserDTO entry, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(entry.Username)) AddError("Username é obrigatório.");
             if (string.IsNullOrWhiteSpace(entry.Email)) AddError("Email é obrigatório.");
@@ -25,9 +25,11 @@ namespace New.AI.Chat.Services
             return Task.CompletedTask;
         }
 
-        protected override async Task DoProcess(CreateUserDTO dto)
+        private UserResponseDTO? _result;
+
+        protected override async Task DoProcess(CreateUserDTO dto, CancellationToken cancellationToken)
         {
-            var exists = await _dbContext.DbSetUsers.AnyAsync(u => u.Username == dto.Username || u.Email == dto.Email);
+            var exists = await _dbContext.DbSetUsers.AnyAsync(u => u.Username == dto.Username || u.Email == dto.Email, cancellationToken);
             if (exists)
             {
                 AddError("Usuário com este username ou email já existe.");
@@ -44,10 +46,10 @@ namespace New.AI.Chat.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _dbContext.DbSetUsers.AddAsync(user);
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.DbSetUsers.AddAsync(user, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
 
-            Data = new UserResponseDTO
+            _result = new UserResponseDTO
             {
                 Id = user.Id,
                 FullName = user.FullName,
@@ -57,5 +59,7 @@ namespace New.AI.Chat.Services
                 CreatedAt = user.CreatedAt
             };
         }
+
+        protected override Task<UserResponseDTO?> GetResultData(CreateUserDTO entry, CancellationToken cancellationToken) => Task.FromResult(_result);
     }
 }

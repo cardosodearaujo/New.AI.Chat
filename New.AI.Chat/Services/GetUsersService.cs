@@ -14,9 +14,11 @@ namespace New.AI.Chat.Services
             _dbContext = dbContext;
         }
 
-        protected override Task Validate(object entry) => Task.CompletedTask;
+        protected override Task Validate(object entry, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        protected override async Task DoProcess(object entry)
+        private GetUsersResponseDTO? _result;
+
+        protected override async Task DoProcess(object entry, CancellationToken cancellationToken)
         {
             var users = await _dbContext.DbSetUsers
                 .AsNoTracking()
@@ -30,9 +32,10 @@ namespace New.AI.Chat.Services
                     IsActive = u.IsActive,
                     CreatedAt = u.CreatedAt
                 })
-                .ToListAsync();
-
-            Data = new GetUsersResponseDTO { Users = users };
+                .ToListAsync(cancellationToken);
+            _result = new GetUsersResponseDTO { Users = users };
         }
+
+        protected override Task<GetUsersResponseDTO> GetResultData(object entry, CancellationToken cancellationToken) => Task.FromResult(_result!);
     }
 }

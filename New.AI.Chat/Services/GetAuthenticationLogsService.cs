@@ -14,12 +14,14 @@ namespace New.AI.Chat.Services
             _dbContext = dbContext;
         }
 
-        protected override Task Validate(object entry)
+        protected override Task Validate(object entry, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
 
-        protected override async Task DoProcess(object entry)
+        private GetAuthenticationLogsResponseDTO? _result;
+
+        protected override async Task DoProcess(object entry, CancellationToken cancellationToken)
         {
             var logs = await _dbContext.DbSetAuthenticationLogs
                 .AsNoTracking()
@@ -33,13 +35,15 @@ namespace New.AI.Chat.Services
                     TokenExpiresAt = l.TokenExpiresAt,
                     IsSuccessful = !string.IsNullOrEmpty(l.Token)
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
-            Data = new GetAuthenticationLogsResponseDTO
+            _result = new GetAuthenticationLogsResponseDTO
             {
                 Logs = logs,
                 TotalRecords = logs.Count
             };
         }
+
+        protected override Task<GetAuthenticationLogsResponseDTO> GetResultData(object entry, CancellationToken cancellationToken) => Task.FromResult(_result!);
     }
 }

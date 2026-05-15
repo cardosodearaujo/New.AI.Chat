@@ -17,7 +17,7 @@ namespace New.AI.Chat.Controllers
         private readonly ILogger<UsersController> _logger;
 
         public UsersController(
-            ILogger<DefaultController> logger,
+            ILogger<UsersController> logger,
             IGetUsersService getUsersService,
             IGetUserByIdService getUserByIdService,
             ICreateUserService createUserService,
@@ -25,7 +25,7 @@ namespace New.AI.Chat.Controllers
             IDeleteUserService deleteUserService,
             IChangeUserPasswordService changeUserPasswordService) : base(logger)
         {
-            _logger = logger as ILogger<UsersController> ?? throw new ArgumentNullException(nameof(logger));
+            _logger = logger;
             _getUsersService = getUsersService;
             _getUserByIdService = getUserByIdService;
             _createUserService = createUserService;

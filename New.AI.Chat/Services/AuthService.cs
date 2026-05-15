@@ -8,6 +8,8 @@ using New.AI.Chat.Services.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace New.AI.Chat.Services
 {
@@ -16,6 +18,7 @@ namespace New.AI.Chat.Services
         private readonly JwtSettings _jwtSettings;
         private readonly AIDbContext _dbContext;
         private readonly IPasswordHashService _passwordHashService;
+        private AuthResponseDTO? _result;
 
         public AuthService(
             IOptions<JwtSettings> jwtOptions, 
@@ -49,7 +52,7 @@ namespace New.AI.Chat.Services
             return Encoding.UTF8.GetBytes(rawKey);
         }
 
-        protected override Task Validate(LoginDTO entry)
+        protected override Task Validate(LoginDTO entry, CancellationToken cancellationToken)
         {
             if (entry == null)
             {
@@ -67,13 +70,15 @@ namespace New.AI.Chat.Services
             return Task.CompletedTask;
         }
 
-        protected override async Task DoProcess(LoginDTO entry)
+        protected override async Task DoProcess(LoginDTO entry, CancellationToken cancellationToken)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = DecodeKey(_jwtSettings.Key);
             var loginAttemptTime = DateTime.UtcNow;
 
-            var user = _dbContext.DbSetUsers.FirstOrDefault(u => u.Username == entry.Username && u.IsActive);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var user = await _dbContext.DbSetUsers.FirstOrDefaultAsync(u => u.Username == entry.Username && u.IsActive, cancellationToken);
 
             if (user == null)
             {
@@ -91,10 +96,10 @@ namespace New.AI.Chat.Services
                 return;
             }
 
-            var claims = new List<Claim>
+            var claims = new List<System.Security.Claims.Claim>
             {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString()),
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -109,14 +114,16 @@ namespace New.AI.Chat.Services
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 
-            Data = new AuthResponseDTO
+            _result = new AuthResponseDTO
             {
                 Token = tokenString,
                 ExpiresAt = tokenDescriptor.Expires ?? loginAttemptTime.AddMinutes(_jwtSettings.ExpirationMinutes)
             };
 
-            await LogAttempt(user.Id, user.Username, tokenString, Data.ExpiresAt);
+            await LogAttempt(user.Id, user.Username, tokenString, _result.ExpiresAt);
         }
+
+        protected override Task<AuthResponseDTO?> GetResultData(LoginDTO entry, CancellationToken cancellationToken) => Task.FromResult(_result);
 
         private async Task LogAttempt(Guid userId, string username, string token, DateTime tokenExpiresAt)
         {
